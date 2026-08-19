@@ -1,0 +1,22 @@
+[project]
+name = "workspace-template"
+version = "0.1.0"
+description = "非技术岗位 Git 工作区的工具链"
+requires-python = ">=3.14"
+dependencies = ["rich>=14.0"]
+
+# 每个 uv run <名字> 对应一行。新命令在这里注册。
+[project.scripts]
+check-env = "workspace.cli:check_env"
+precommit = "workspace.cli:precommit"
+check-chain = "workspace.cli:check_chain_cmd"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# 工作区里的 Python 包,一行一个。
+# 包不必都放在 tools/ 下,也不限一个 —— 放在离它服务的东西最近的地方:
+#   packages = ["tools/workspace", "code/analytics", "budgets/forecasting"]
+[tool.hatch.build.targets.wheel]
+packages = ["tools/workspace"]

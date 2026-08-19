@@ -1,0 +1,22 @@
+#!/usr/bin/env -S uv run python
+"""git pre-commit 钩子。
+
+启用方式(克隆后每人一次):
+
+    git config core.hooksPath .githooks
+
+本文件只是入口。判断逻辑在 `workspace.precommit`,渲染在 `workspace.render` ——
+人和 AI 都可以直接调用它们,不必通过这个钩子。同样的检查也能手动跑:
+
+    uv run precommit
+
+shebang 里的 `uv run` 会用本项目的环境(依赖写在 pyproject.toml,不写在这里),
+所以钩子和其他工具跑的是同一套代码、同一套依赖。
+"""
+
+import sys
+
+from workspace.cli import precommit
+
+if __name__ == "__main__":
+    sys.exit(precommit())

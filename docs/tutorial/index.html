@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>工作区 · 入门</title>
+<style>
+:root{
+  --bg:#fbfaf8; --panel:#fff; --ink:#1a1a1a; --dim:#6b6560; --line:#e4e0d9;
+  --accent:#b5502a; --ok:#2f7d4f; --warn:#b8860b; --term-bg:#1c1b19; --term-ink:#e8e4dd;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#141312; --panel:#1c1b19; --ink:#e8e4dd; --dim:#9a938a; --line:#2e2c29;
+         --accent:#e07a4f; --ok:#6bbf8a; --warn:#d9a441; --term-bg:#0e0d0c; --term-ink:#e8e4dd; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.78 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC",sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:44px 24px 110px}
+h1{font-size:31px;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--dim);margin:0 0 8px}
+nav{position:sticky;top:0;z-index:9;background:color-mix(in srgb,var(--bg) 93%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line);margin:26px -24px 0;padding:11px 24px;
+  display:flex;gap:19px;flex-wrap:wrap;font-size:14px}
+nav a{color:var(--dim);text-decoration:none;white-space:nowrap}
+nav a:hover{color:var(--accent)}
+h2{font-size:21px;margin:56px 0 7px;padding-top:26px;border-top:1px solid var(--line);scroll-margin-top:56px}
+h2 .n{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:11px}
+h3{font-size:16px;margin:28px 0 6px}
+p{margin:0 0 14px}
+.note{color:var(--dim);font-size:14.5px}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;
+  background:color-mix(in srgb,var(--ink) 8%,transparent);padding:1.5px 5px;border-radius:4px}
+pre{background:var(--term-bg);color:var(--term-ink);padding:13px 15px;border-radius:9px;overflow-x:auto;
+  font-family:ui-monospace,Menlo,monospace;font-size:13.5px;line-height:1.62;margin:0 0 14px}
+a{color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;margin:0 0 14px}
+th,td{text-align:left;padding:7px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--dim);font-size:13px}
+.warn{background:color-mix(in srgb,var(--warn) 11%,transparent);
+  border-left:3px solid var(--warn);padding:11px 14px;border-radius:0 7px 7px 0;margin:0 0 14px;font-size:14.5px}
+
+.areas{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:20px 0 0}
+.area{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 10px;min-height:130px;transition:.25s}
+.area.hot{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 15%,transparent)}
+.area h4{margin:0 0 2px;font-size:12.5px}
+.area .s2{font-size:10.5px;color:var(--dim);margin:0 0 9px;font-family:ui-monospace,monospace}
+.chip{display:block;font-size:11.5px;font-family:ui-monospace,monospace;
+  background:color-mix(in srgb,var(--ink) 6%,transparent);border-radius:4px;padding:3px 6px;margin-bottom:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.mod{color:var(--warn)} .chip.new{color:var(--ok)}
+.empty{font-size:11.5px;color:var(--dim);font-style:italic}
+.arrows{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:7px;
+  font-size:10.5px;color:var(--dim);text-align:center;font-family:ui-monospace,monospace}
+.term{background:var(--term-bg);color:var(--term-ink);border-radius:10px;margin-top:18px;
+  font-family:ui-monospace,Menlo,monospace;font-size:13.5px;line-height:1.65;overflow:hidden}
+.out{padding:14px 15px 4px;max-height:280px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+.inrow{display:flex;align-items:center;gap:8px;padding:9px 15px 13px}
+.ps1{color:var(--ok);flex:none}
+#cmd{flex:1;background:transparent;border:0;outline:0;color:var(--term-ink);font:inherit;caret-color:var(--accent)}
+.g{color:#6bbf8a}.r{color:#e0705c}.y{color:#d9a441}.d{color:#8a837a}
+.tasks{list-style:none;padding:0;margin:18px 0 0;display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+.tasks li{font-size:14px;color:var(--dim);display:flex;gap:9px;align-items:baseline}
+.tasks li .bx{flex:none;width:15px;color:var(--line)}
+.tasks li.done{color:var(--ink)} .tasks li.done .bx{color:var(--ok)}
+.tasks li.done .t{text-decoration:line-through;text-decoration-color:var(--dim)}
+.done-msg{margin-top:16px;padding:12px 14px;border-radius:8px;font-size:14.5px;display:none;
+  background:color-mix(in srgb,var(--ok) 12%,transparent);border:1px solid color-mix(in srgb,var(--ok) 34%,transparent)}
+.done-msg.show{display:block}
+#cf{width:100%;min-height:180px;background:var(--term-bg);color:var(--term-ink);border:1px solid var(--line);
+  border-radius:10px;padding:14px;font-family:ui-monospace,Menlo,monospace;font-size:13.5px;line-height:1.7;resize:vertical}
+.btn{margin-top:11px;background:var(--accent);color:#fff;border:0;border-radius:7px;padding:9px 17px;
+  font-size:14.5px;cursor:pointer;font-family:inherit}
+.btn:hover{opacity:.9}
+.verdict{margin-top:11px;font-size:14.5px;display:none}
+.verdict.show{display:block} .verdict.bad{color:var(--accent)} .verdict.good{color:var(--ok)}
+details{border:1px solid var(--line);border-radius:9px;padding:0;margin-bottom:7px;background:var(--panel)}
+details summary{cursor:pointer;padding:11px 14px;font-size:15px;list-style:none;font-weight:500}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:"▸ ";color:var(--accent)}
+details[open] summary:before{content:"▾ "}
+details .body{padding:0 14px 12px;font-size:14.5px}
+details .body pre{margin-top:8px}
+.foot{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);font-size:14.5px;color:var(--dim)}
+@media(max-width:640px){.areas,.arrows{grid-template-columns:1fr 1fr}.tasks{grid-template-columns:1fr}.wrap{padding:30px 16px 70px}nav{margin:20px -16px 0;padding:10px 16px}}
+</style>
+</head>
+<body><div class="wrap">
+
+<h1>入门</h1>
+<p class="sub">给第一次用 Git 的人。边看边练,大约半小时。</p>
+<p class="note">环境还没装好的话,先看仓库根目录的 <a href="../../README.md">README</a>。
+这页假设你已经把仓库克隆到本地了。</p>
+
+<nav>
+  <a href="#c1">1 命令</a><a href="#c2">2 冲突</a><a href="#c3">3 出事了</a>
+  <a href="#c4">4 格式</a><a href="#c5">5 交给 AI</a><a href="#c6">6 并行</a>
+</nav>
+
+<h2 id="c1"><span class="n">1</span>五条命令,和它们搬动的东西</h2>
+<p>Git 里的文件会待在四个位置。最容易搞混的是中间两个 —— 尤其是
+<strong>「本地仓库」在你自己电脑上,同事看不到</strong>。</p>
+<p class="note">下面是模拟的,敲错也不会碰到你真的文件。按提示把五条命令走一遍。</p>
+
+<div class="areas">
+  <div class="area" id="a-wt"><h4>你的文件夹</h4><p class="s2">working tree</p><div id="c-wt"></div></div>
+  <div class="area" id="a-st"><h4>暂存区</h4><p class="s2">staging</p><div id="c-st"></div></div>
+  <div class="area" id="a-lo"><h4>本地仓库</h4><p class="s2">同事看不到</p><div id="c-lo"></div></div>
+  <div class="area" id="a-re"><h4>GitHub</h4><p class="s2">同事看得到</p><div id="c-re"></div></div>
+</div>
+<div class="arrows"><div>── add ──▶</div><div>── commit ──▶</div><div>── push ──▶</div><div></div></div>
+
+<div class="term">
+  <div class="out" id="out"></div>
+  <div class="inrow"><span class="ps1">~/work/marketing-general-workspace $</span><input id="cmd" autocomplete="off" spellcheck="false" autofocus></div>
+</div>
+<ul class="tasks" id="tasks"></ul>
+<div class="done-msg" id="donemsg"><strong>五条都走完了。</strong>
+日常就是这五条,一天来几轮 —— <code>git pull</code> 开工,
+<code>git status</code> 随时看状态,干完一段 <code>add</code> → <code>commit</code> → <code>push</code>。</div>
+
+<h3>关于 commit message</h3>
+<p>它是写给三个月后的你和同事看的。那时候没人记得「更新」是更新了什么。</p>
+<table>
+<tr><th>✅</th><td><code>新增客户培训材料初稿(基于上周的访谈记录)</code></td></tr>
+<tr><th>✅</th><td><code>Add Q3 pricing comparison based on the product team's figures</code></td></tr>
+<tr><th>❌</th><td><code>更新</code> / <code>修改了一些东西</code> / <code>final</code> / <code>最终版2</code></td></tr>
+</table>
+<p class="note"><strong>英文是更规范的默认</strong>(开发惯例,工具链也更顺),
+但英语不好就写中文 —— <strong>把事情说清楚,比用哪种语言重要得多</strong>。
+憋出一句自己都不确定的英文,不如一句准确的中文。</p>
+<p class="note">文件名里写「最终版」是网盘时代的习惯。Git 里每次提交都带着时间、作者和说明 ——
+历史本身就是版本,不用靠文件名区分。</p>
+
+<h2 id="c2"><span class="n">2</span>冲突</h2>
+<p>你和同事改了同一句话,<code>git pull</code> 时会撞上。Git 把两版都塞进文件、标上记号,等你定夺。</p>
+<p><strong>你要做的是决定留什么,然后把三行记号全删掉。</strong> 试试看:</p>
+
+<textarea id="cf" spellcheck="false">这是文章开头,没人动过。
+
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+我们建议在 Q4 之前完成迁移。
+=======
+我们建议把迁移推迟到明年。
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; abc1234
+
+这是结尾,也没人动过。</textarea>
+<button class="btn" id="chk">检查一下</button>
+<div class="verdict" id="vd"></div>
+
+<p style="margin-top:18px">改完在真实仓库里是:</p>
+<pre>git add 那个文件
+git rebase --continue
+git push</pre>
+<div class="warn"><strong>处理不了就退回去,什么都不会丢:</strong> <code>git rebase --abort</code><br>
+然后找同事当面聊。一句「这段你想留哪版」能解决的事,不要跟 Git 较劲。</div>
+<p class="note"><strong>怎么少遇到冲突:</strong> 动手前先 <code>git pull</code>,能消灭八成;
+在群里说一声「我在改 XX」。图片这类二进制文件尤其要说 ——
+文本冲突能手工合并,<code>.png</code> 的冲突<strong>无法合并</strong>,只能二选一,另一份直接没了。</p>
+
+<h2 id="c3"><span class="n">3</span>出事了</h2>
+<div class="warn"><strong>只要你提交过,东西就丢不了。</strong>
+Git 的设计目标就是不丢数据,绝大多数「我完蛋了」一分钟内能恢复。<br>
+<strong>不确定就先敲 <code>git status</code></strong> —— 它会告诉你现在什么状态、下一步能做什么。</div>
+
+<details><summary>想丢掉还没提交的改动</summary><div class="body">
+<pre>git restore 文件名     # 单个
+git restore .         # 全部</pre>
+⚠️ 这会<strong>永久丢失</strong>未提交的内容 —— 从没提交过的东西,Git 里没有它的记录。
+先 <code>git diff</code> 看一眼你在丢什么。<br><br>
+不想丢、只是想先放一边:<code>git stash</code>,回头 <code>git stash pop</code> 拿回来。
+</div></details>
+
+<details><summary>想找回以前的版本</summary><div class="body">
+<pre>git log --oneline -- 文件路径              # 这个文件的历史
+git show &lt;提交号&gt;:文件路径                  # 那时候长什么样
+git restore --source=&lt;提交号&gt; -- 文件路径   # 恢复到那个版本</pre>
+<code>&lt;提交号&gt;</code> 是 <code>git log</code> 里那串七位字符。恢复不会丢掉现在的版本 —— 它也在历史里。
+</div></details>
+
+<details><summary>push 被拒绝了</summary><div class="body">
+<pre>! [rejected] main -&gt; main (fetch first)</pre>
+GitHub 上有你还没有的提交(同事推过东西了)。
+<pre>git pull
+git push</pre>
+<code>git pull</code> 如果报冲突,回到上一节。
+</div></details>
+
+<details><summary>提交错了,想撤销</summary><div class="body">
+<strong>还没 push:</strong>
+<pre>git reset --soft HEAD~1    # 撤销提交,保留改动(最常用)
+git reset --hard HEAD~1    # 撤销提交,并丢弃改动 ⚠️</pre>
+<strong>已经 push 了</strong> —— 用一次新提交抵消它:
+<pre>git revert &lt;提交号&gt;
+git push</pre>
+<strong>已推送的一律用 <code>revert</code>,不要用 <code>reset</code>。</strong>
+reset 会让你的历史和同事的对不上,后果比原来的错误麻烦得多。<br><br>
+message 写错了、还没 push:<code>git commit --amend -m "新的"</code>。
+已经 push 了就算了 —— 改它的代价大于一条不完美的 message。
+</div></details>
+
+<details><summary>提交被检查拦住了</summary><div class="body">
+看到 <code>✗ 提交被拦截</code>,<strong>报错里已经写清了原因和解决办法,完整读一遍。</strong>
+三种情况:Office 格式(转成 <code>.md</code> / <code>.csv</code>)、
+超过 5 MB 没走 LFS(说明这个扩展名还没交给 LFS,补进 <code>.gitattributes</code>)、
+LFS 没装好(<code>git lfs install</code>)。<br><br>
+第三种最值得重视 —— 它帮你拦下的是一个不可逆的错误。<br><br>
+确属合理例外的,<code>git commit --no-verify</code> 跳过,但你要能解释理由。
+</div></details>
+
+<details><summary>把大文件或密码提交上去了</summary><div class="body">
+<strong>还没 push:</strong> <code>git reset --soft HEAD~1</code>,把文件挪出去或加进
+<code>.gitignore</code>,重新提交。<br><br>
+<strong>已经 push 了:立刻停手,找技术同事。</strong> 不要自己试命令,那通常只会让情况更糟。<br><br>
+密钥泄露的话,除了清理历史,<strong>必须立刻作废并更换那个密钥</strong> ——
+假设它已经泄露了,公开仓库会被自动扫描,通常在几分钟内。
+</div></details>
+
+<details><summary>文件名显示成 \344\270\255 这样的乱码</summary><div class="body">
+<pre>git config --global core.quotepath false
+git config --global core.precomposeunicode true</pre>
+<strong>根本的解法是别用中文文件名。</strong> 我们的约定是文件名一律 ASCII,
+中文写在文件内容里,不写进文件名 —— 见 <a href="../../AGENTS.md">AGENTS.md</a>。
+别人交给你的文件如果是中文名,不必强行改 —— 改名会打断对方的引用。
+</div></details>
+
+<details><summary>屏幕突然变成一个奇怪的编辑器</summary><div class="body">
+Git 打开了 Vim。一堆 <code>~</code>,打字没反应,关不掉。<br><br>
+保存退出:<code>Esc</code> → <code>:wq</code> → 回车ㅤ|ㅤ
+放弃退出:<code>Esc</code> → <code>:q!</code> → 回车<br><br>
+换掉它:<code>git config --global core.editor nano</code><br>
+(顺带,<code>git commit</code> 加 <code>-m "..."</code> 就不会弹编辑器。)
+</div></details>
+
+<details><summary>完全看不懂的报错</summary><div class="body">
+1. 先 <code>git status</code><br>
+2. <strong>把报错原样交给 AI</strong> —— 不要复述、不要概括,整段复制,
+并说明你刚执行了什么、想做什么。这正是值得交给 AI 的那类事。<br>
+3. 还不行就找同事,带上:执行的命令、完整报错、<code>git status</code> 输出。<br><br>
+<strong>在此期间不要乱试命令。</strong> 一个能救的局面,常常是被后面几条「试试看」搞成不能救的。
+停下来问,不丢人。
+</div></details>
+
+<h3>绝对不要做</h3>
+<table>
+<tr><td><code>git push --force</code></td><td><strong>覆盖 GitHub 上的历史,同事的工作可能直接消失。</strong> 本仓库任何情况都不需要它。</td></tr>
+<tr><td>对已推送的提交 <code>reset --hard</code></td><td>你的历史和同事的对不上,之后每次 pull 都是灾难。用 <code>revert</code>。</td></tr>
+<tr><td><code>rm -rf .git</code></td><td>删掉整个版本历史。</td></tr>
+<tr><td>复制粘贴看不懂的命令</td><td>网上搜到的「一行解决」经常带 <code>--force</code>。<strong>看不懂就别执行。</strong></td></tr>
+<tr><td>把 <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code> 提交上去</td><td>它会跟着内容一起交出去,而且通常没人发现,直到对方看到。</td></tr>
+</table>
+
+<h2 id="c4"><span class="n">4</span>存成什么格式</h2>
+<p><strong>能用纯文本表达的,就用纯文本。</strong> 不是技术洁癖,是三件实打实的事:</p>
+<p><strong>AI 读不了二进制。</strong> 我们的工作方式建立在「AI 能接手你的产出」之上 ——
+它能读 Markdown、能基于它改写对比;面对 <code>.docx</code> 它拿到的是一坨压缩过的字节。</p>
+<p><strong>版本历史会失效。</strong> <code>.docx</code> 是压缩包,改一个字整个文件的字节全变。
+Git 只能说「这个文件变了」,说不出变了什么 —— 那用 Git 就没意义了。纯文本则是这样:</p>
+<pre><span class="r">- 我们建议把迁移推迟到明年。</span>
+<span class="g">+ 我们建议在 Q4 之前完成迁移。</span></pre>
+<p><strong>两个人同时改不会打架。</strong> 各改各的段落,Git 自动合并,你甚至不会察觉。
+换成 <code>.docx</code>,必然冲突且无解,总有一个人的活白干。</p>
+<table>
+<tr><th>要做的事</th><th>用</th></tr>
+<tr><td>文章、方案、纪要、脚本</td><td><code>.md</code></td></tr>
+<tr><td>表格数据</td><td><code>.csv</code>(要算就配个 <code>.py</code>)</td></tr>
+<tr><td>幻灯片</td><td>Marp / Slidev(用 Markdown 写)</td></tr>
+<tr><td>流程图、架构图</td><td>Mermaid(写在 <code>.md</code> 里,GitHub 直接渲染)</td></tr>
+<tr><td>图标、简单图形</td><td><code>.svg</code></td></tr>
+<tr><td>对外交付的定稿</td><td><code>.pdf</code>(导出产物,源文件仍是 <code>.md</code>)</td></tr>
+</table>
+<p class="note"><code>.docx</code> <code>.xlsx</code> <code>.pptx</code> <code>.pages</code>
+<code>.numbers</code> <code>.key</code> 提交时会被拦截。理由和例外见
+<a href="../design-rationale.md">design-rationale.md</a>。</p>
+
+<h3>Markdown 十分钟</h3>
+<p class="note">你几乎肯定已经在用了 —— 微信、飞书里 <code>**加粗**</code> 的写法就是它。</p>
+<pre># 一级标题
+## 二级标题
+
+正文。**加粗**、*斜体*、[链接](https://example.com)。
+
+- 列表
+  - 子项
+
+&gt; 引用
+
+| 表头 | 表头 |
+|---|---|
+| 单元格 | 单元格 |</pre>
+<p class="note">会这些够写 95% 的内容。不确定就问 AI。</p>
+
+<h3>图片和音视频</h3>
+<p>这类天然是二进制,没得选 —— 走 LFS,正常 <code>git add</code> 即可。
+公司用付费方案,<strong>图片原样提交就行,不用压缩</strong>,仓库到几个 GB 没关系。</p>
+<p class="note">这个仓库要替代的是共享盘和飞书 —— 在那些工具里没人会先压图再上传,
+这里也不该。真正要留在仓库外的,只有<strong>大到本来就只该留在本地的东西</strong>:
+相机原片、长时间屏幕录制、多轨工程文件。放云盘,仓库里留个 <code>.md</code> 写清链接。</p>
+
+<h2 id="c5"><span class="n">5</span>什么自己做,什么交给 AI</h2>
+<p>不是「简单的自己做,复杂的交出去」。真正的标准是
+<strong>「熟练的开发者遇到这一步,会不会选择自己来」</strong>。</p>
+<table>
+<tr><th>谁来</th><th>什么</th></tr>
+<tr><td><strong>你自己</strong></td>
+    <td><code>git commit</code> <code>git push</code> —— 够重要,又足够简单。
+    这是你对「什么时候存档、什么时候发出去」的判断,不该外包。</td></tr>
+<tr><td><strong>AI 直接做</strong></td>
+    <td><code>ls</code> <code>cat</code> <code>grep</code> 这类它干活本来就要用的 ——
+    不用你批准,那只会拖慢它。</td></tr>
+<tr><td><strong>AI 先问你</strong></td>
+    <td><code>brew install</code> <code>apt install</code>、动系统 Python 的操作 ——
+    <strong>这些改的是你的电脑,不是这个仓库</strong>。它应该先说清楚装什么、为什么。</td></tr>
+<tr><td><strong>交给 AI</strong></td>
+    <td>从素材写稿、跨平台改写、解释看不懂的报错、把重复劳动写成脚本、
+    理清一次复杂的冲突或回退。</td></tr>
+</table>
+<p>界线会随着你变熟练而移动 —— 今天需要问的,下个月你自己就会了。<strong>主动往上挪。</strong></p>
+<p class="note">两个方向都要防:把所有操作都外包出去的人,
+遇到第一个 AI 也搞不定的场景就卡死了;但凡事都要点头确认,
+又会把一个能自己干活的 AI 变成很慢的工具。</p>
+<p>仓库里已经有现成技能,在 <code>claude</code> 或 <code>codex</code> 里输入 <code>/</code> 就能看到:
+<code>/draft-from-raw</code>(从素材写稿)、<code>/improve-workspace</code>(改进这套工具)。</p>
+
+<h3>它会顶你,这是故意的</h3>
+<p>你让 AI「就让我把这个 docx 提交了吧」,它多半不会照做,
+而是先告诉你为什么不该这么干,然后帮你把文件转成 Markdown。</p>
+<p><strong>这不是它出毛病了,是它被要求这么做的。</strong>
+这些规矩存在是有原因的 —— 每一条的理由和代价都写在
+<a href="../design-rationale.md">design-rationale.md</a> 里,你可以去核对。
+一个对什么都点头的 AI,会在几个月里把这套工作方式悄悄变回从前那样。</p>
+<p class="note">但它也不该拦着你不放。听完理由你仍然坚持、并且说得出为什么,
+它就该照办 —— 你是成年人,可能知道它不知道的情况。
+真觉得某条规矩错了,那就去改它,理由写进 design-rationale.md。
+<strong>破一次例和改掉规矩是两回事,别把前者当成后者。</strong></p>
+
+<h2 id="c6"><span class="n">6</span>不用排队:同时做几件事</h2>
+<p>常见的一幕:你让 AI 做一件事,盯着它跑完,再让它做下一件 ——
+<strong>但这两件事根本不相关,你为什么要等?</strong></p>
+<p><strong>worktree</strong> 就是解决这个的:同一个仓库,再开一个独立的工作目录。
+两个目录互不干扰,你可以在每个里面各开一个 AI 会话,让它们同时干,你在中间巡视。</p>
+
+<pre>git worktree add ../ws-预算 -b 预算    # 新建一个工作目录
+cd ../ws-预算                          # 进去，在这里开新的 AI 会话
+git worktree list                      # 看看现在有哪些
+git worktree remove ../ws-预算          # 干完了，删掉</pre>
+
+<p class="note">本仓库里 worktree 开箱即用 —— 提交检查、LFS、Git 配置都自动继承,
+工具环境第一次运行时自己装好(一秒左右)。不用重新配任何东西。</p>
+
+<h3>一条要守的规矩:当天合回来</h3>
+<div class="warn"><strong>我们要所有人都对着同一个最新状态干活。</strong>
+worktree 会带一个分支(git 的要求),但它应该是<strong>短命的</strong> ——
+当天干完就合回 <code>main</code>、删掉。
+<pre style="margin-top:10px">git checkout main
+git merge 预算
+git branch -d 预算</pre>
+</div>
+<p class="note">为什么:分叉三天再合,那部分现实已经变了 ——
+而且分叉越久合并越痛,越痛越想拖,是个恶性循环。
+判断标准不是「用没用分支」,而是<strong>你离主线多久了</strong>。</p>
+<p>AI 应该会主动提醒你这件事 —— 你连着交代两件不相关的活时,
+它该建议你开 worktree,而不是让你排队。它没提,你可以问它。</p>
+
+<div class="foot">
+规范和红线在 <a href="../../AGENTS.md">AGENTS.md</a>(人和 AI 读同一份)ㅤ·ㅤ
+为什么这样设计在 <a href="../design-rationale.md">design-rationale.md</a><br>
+<span style="font-size:13px">这页是练习。任何规则以 AGENTS.md 为准。
+觉得哪里讲得不清楚 —— 直接改这个文件,见 AGENTS.md 里的「心态」。</span>
+</div>
+</div>
+
+<script>
+const S={wt:[{n:'reports/2026-q3/summary.md',s:'mod'},{n:'reports/2026-q3/chart.png',s:'new'}],
+         st:[],lo:[],re:[{n:'(3 个历史提交)',s:''}]};
+const TASKS=[['pull','git pull'],['status','git status'],['add','git add'],['commit','git commit'],['push','git push']];
+const hit=new Set(); const $=i=>document.getElementById(i);
+function paint(){
+  for(const[k,id]of[['wt','c-wt'],['st','c-st'],['lo','c-lo'],['re','c-re']]){
+    $(id).innerHTML=S[k].length?S[k].map(f=>`<span class="chip ${f.s}">${f.n.split('/').pop()}</span>`).join('')
+                               :'<span class="empty">空</span>';}
+  $('tasks').innerHTML=TASKS.map(([k,l])=>
+    `<li class="${hit.has(k)?'done':''}"><span class="bx">${hit.has(k)?'✓':'□'}</span><span class="t">${l}</span></li>`).join('');
+  if(hit.size===5)$('donemsg').classList.add('show');
+}
+function flash(id){const e=$(id);e.classList.add('hot');setTimeout(()=>e.classList.remove('hot'),650);}
+function say(h){$('out').insertAdjacentHTML('beforeend',h+'\n');$('out').scrollTop=$('out').scrollHeight;}
+function run(raw){
+  const c=raw.trim(); if(!c)return;
+  say('<span class="g">$</span> '+c.replace(/</g,'&lt;'));
+  const m=re=>re.test(c);
+  if(!/^git\b/.test(c)){say('<span class="r">'+c.split(' ')[0].replace(/</g,'&lt;')+': command not found</span>  <span class="d">— 这一节只认 git 命令</span>');return;}
+  if(m(/^git\s+pull/)){hit.add('pull');flash('a-re');
+    say('<span class="d">Already up to date.</span>\n<span class="d">开工前第一件事。不拉最新就动手,是所有冲突的源头。</span>');}
+  else if(m(/^git\s+status/)){hit.add('status');
+    let o='On branch main\n';
+    if(S.st.length)o+='<span class="g">要提交的改动:</span>\n'+S.st.map(f=>`<span class="g">  ${f.s==='new'?'新文件':'修改  '}: ${f.n}</span>`).join('\n')+'\n';
+    if(S.wt.length)o+='<span class="r">尚未暂存的改动:</span>\n'+S.wt.map(f=>`<span class="r">  ${f.s==='new'?'未跟踪':'修改  '}: ${f.n}</span>`).join('\n')+'\n<span class="d">  (用 "git add ." 把它们放进暂存区)</span>\n';
+    if(!S.st.length&&!S.wt.length)o+='<span class="d">nothing to commit, working tree clean</span>\n';
+    if(S.lo.length)o+=`<span class="y">你有 ${S.lo.length} 个提交还没推送</span>\n<span class="d">  (用 "git push" 发出去)</span>\n`;
+    say(o.trimEnd());}
+  else if(m(/^git\s+add/)){
+    if(!S.wt.length)say('<span class="d">没有需要暂存的改动。</span>');
+    else{hit.add('add');const n=S.wt.length;S.st.push(...S.wt);S.wt=[];flash('a-st');
+      say(`<span class="d">${n} 个文件进了暂存区。这一步只是"选出要提交哪些",还没存档。</span>`);}}
+  else if(m(/^git\s+commit/)){
+    if(!S.st.length)say('<span class="r">nothing to commit</span>  <span class="d">— 先 git add</span>');
+    else if(!/-m\s*["'].+["']/.test(c))say('<span class="y">没写 message。</span> <span class="d">加上 -m "说清楚做了什么",否则会弹出编辑器。</span>');
+    else{const msg=c.match(/-m\s*["'](.+)["']/)[1];hit.add('commit');S.lo.push({n:msg,s:''});
+      const n=S.st.length;S.st=[];flash('a-lo');
+      say(`[main ${Math.random().toString(16).slice(2,9)}] ${msg}\n <span class="d">${n} 个文件已存档 —— 但只存在你自己电脑上,同事还看不到。</span>`);
+      if(/^(更新|修改|最终版|final|asdf|update|fix)$/i.test(msg.trim()))
+        say('<span class="y">⚠ 这条 message 三个月后没人看得懂它改了什么。</span>');}}
+  else if(m(/^git\s+push\s+.*(-f\b|--force)/)){
+    say('<span class="r">别。这条会覆盖 GitHub 上的历史,同事的工作可能直接消失。</span>\n<span class="d">本仓库任何情况都不需要它。见上面第 3 节「绝对不要做」。</span>');}
+  else if(m(/^git\s+push/)){
+    if(!S.lo.length)say('<span class="d">Everything up-to-date.</span>');
+    else{hit.add('push');const n=S.lo.length;S.re.push(...S.lo);S.lo=[];flash('a-re');
+      say(`To github.com:<你们组织>/<仓库名>.git\n <span class="g">${n} 个提交已推送。现在同事能看到了。</span>`);}}
+  else if(m(/^git\s+diff/)){
+    say(S.wt.length?'<span class="r">- 我们建议把迁移推迟到明年。</span>\n<span class="g">+ 我们建议在 Q4 之前完成迁移。</span>'
+                   :'<span class="d">(没有未暂存的改动)</span>');}
+  else if(m(/^git\s+log/)){
+    const all=[...S.re,...S.lo].filter(x=>x.n);
+    say(all.length?all.slice().reverse().map(x=>`<span class="y">${Math.random().toString(16).slice(2,9)}</span> ${x.n}`).join('\n'):'<span class="d">(还没有提交)</span>');}
+  else say('<span class="d">这一节只模拟 pull / status / add / commit / push / diff / log。</span>');
+  paint();
+}
+$('cmd').addEventListener('keydown',e=>{if(e.key==='Enter'){run(e.target.value);e.target.value='';}});
+say('<span class="d">按顺序试:git pull → git status → git add . → git commit -m "新增客户培训材料初稿" → git push</span>\n');
+paint();
+$('chk').addEventListener('click',()=>{
+  const t=$('cf').value,v=$('vd');v.className='verdict show';
+  if(/<{7}|={7}|>{7}/.test(t)){v.className+=' bad';
+    v.textContent='还有冲突记号没删干净。<<<<<<< ======= >>>>>>> 这三行都要去掉 —— 留着的话它们会跟着内容一起交出去。';}
+  else if(t.includes('Q4 之前完成迁移')&&t.includes('推迟到明年')){v.className+=' bad';
+    v.textContent='记号删干净了,但两个版本都还在,读起来是自相矛盾的两句话。冲突要的是「决定留什么」,不是把两边都留下。';}
+  else if(!t.trim()){v.className+=' bad';v.textContent='全删了。冲突是二选一或者糅合,不是把内容清空。';}
+  else{v.className+=' good';v.textContent='对了。接下来:git add 那个文件 → git rebase --continue → git push。';}
+});
+</script>
+</body></html>

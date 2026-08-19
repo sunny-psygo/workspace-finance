@@ -1,0 +1,78 @@
+# ==============================================================================
+# .gitattributes — 文件处理规则
+# ==============================================================================
+# 本文件告诉 Git 如何对待各类文件。一般不需要修改；如需新增规则，
+# 请先阅读 docs/02-文件格式规范.md,确认该格式确实应当进入本仓库。
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. 默认:所有文件按文本处理,换行符统一为 LF
+# ------------------------------------------------------------------------------
+* text=auto eol=lf
+
+# ------------------------------------------------------------------------------
+# 2. 明确的文本格式 —— 这些是我们希望大家使用的格式
+#    它们可以 diff、可以 merge、AI 可以直接读懂
+# ------------------------------------------------------------------------------
+*.md        text
+*.txt       text
+*.csv       text
+*.tsv       text
+*.json      text
+*.yml       text
+*.yaml      text
+*.toml      text
+*.svg       text
+*.html      text
+*.css       text
+*.js        text
+*.py        text
+*.sh        text
+
+# ------------------------------------------------------------------------------
+# 3. 二进制素材 —— 交由 Git LFS 存储
+#    这些文件不参与 diff/merge。同一个文件同一时间只能有一个人在改。
+# ------------------------------------------------------------------------------
+
+# 图片
+*.png       filter=lfs diff=lfs merge=lfs -text
+*.jpg       filter=lfs diff=lfs merge=lfs -text
+*.jpeg      filter=lfs diff=lfs merge=lfs -text
+*.gif       filter=lfs diff=lfs merge=lfs -text
+*.webp      filter=lfs diff=lfs merge=lfs -text
+*.bmp       filter=lfs diff=lfs merge=lfs -text
+*.tiff      filter=lfs diff=lfs merge=lfs -text
+*.heic      filter=lfs diff=lfs merge=lfs -text
+*.ico       filter=lfs diff=lfs merge=lfs -text
+
+# 音频
+*.mp3       filter=lfs diff=lfs merge=lfs -text
+*.wav       filter=lfs diff=lfs merge=lfs -text
+*.m4a       filter=lfs diff=lfs merge=lfs -text
+*.aac       filter=lfs diff=lfs merge=lfs -text
+*.flac      filter=lfs diff=lfs merge=lfs -text
+
+# 视频(仅限短片段,详见 docs/02-文件格式规范.md 中关于视频的说明)
+*.mp4       filter=lfs diff=lfs merge=lfs -text
+*.mov       filter=lfs diff=lfs merge=lfs -text
+*.webm      filter=lfs diff=lfs merge=lfs -text
+*.mkv       filter=lfs diff=lfs merge=lfs -text
+
+# 输出物 PDF(只能是导出结果,不能是源文件)
+*.pdf       filter=lfs diff=lfs merge=lfs -text
+
+# 字体
+*.ttf       filter=lfs diff=lfs merge=lfs -text
+*.otf       filter=lfs diff=lfs merge=lfs -text
+*.woff      filter=lfs diff=lfs merge=lfs -text
+*.woff2     filter=lfs diff=lfs merge=lfs -text
+
+# 压缩包(应尽量避免:压缩包对版本控制不透明)
+*.zip       filter=lfs diff=lfs merge=lfs -text
+*.gz        filter=lfs diff=lfs merge=lfs -text
+*.7z        filter=lfs diff=lfs merge=lfs -text
+
+# ------------------------------------------------------------------------------
+# 4. 语言统计:文档目录不计入代码语言统计
+# ------------------------------------------------------------------------------
+docs/**     linguist-documentation
