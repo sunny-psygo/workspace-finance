@@ -51,6 +51,29 @@ async function main() {
     }),
     (error: unknown) => error instanceof LedgerError && error.code === "PERIOD_LOCKED",
   );
+
+  const { db } = await import("./db");
+  await db.claim.create({
+    data: {
+      id: `open-${book.id.slice(0, 8)}`,
+      bookId: book.id,
+      status: "financeReview",
+      revision: 2,
+      applicant: "测",
+      department: "行政",
+      costCenter: "公司公共",
+      payeeName: "测",
+      payeeAccount: "1",
+      bankName: "行",
+      purpose: "挡结账",
+      occurredOn: "2026-11-02",
+      totalCents: 100,
+    },
+  });
+  await assert.rejects(
+    () => closePeriod(book.id, "2026-11", "财务李", "有未审单"),
+    (error: unknown) => error instanceof LedgerError && error.code === "PERIOD_HAS_OPEN_CLAIMS",
+  );
   await postEntry(book.id, {
     occurredOn: "2026-10-15",
     memo: "未锁月",

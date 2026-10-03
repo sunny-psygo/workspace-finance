@@ -82,6 +82,25 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     where: { bookId_yearMonth: { bookId, yearMonth } },
   });
   if (existing) return existing;
+
+  const openClaims = await db.claim.findMany({
+    where: {
+      bookId,
+      occurredOn: { startsWith: `${yearMonth}-` },
+      status: { in: ["financeReview", "gmReview", "paymentVoucher"] },
+    },
+    select: { id: true, status: true, purpose: true },
+    take: 20,
+  });
+  if (openClaims.length) {
+    const detail = openClaims.map((row) => `${row.id.slice(0, 8)}:${row.status}`).join("、");
+    throw new LedgerError(
+      `期间 ${yearMonth} 仍有未完成单据：${detail}。`,
+      "PERIOD_HAS_OPEN_CLAIMS",
+      "先审批完或付完这些单，再结账。",
+    );
+  }
+
   return db.accountingPeriod.create({
     data: {
       id: randomUUID(),
