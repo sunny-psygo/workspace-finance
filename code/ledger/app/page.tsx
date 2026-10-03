@@ -53,6 +53,32 @@ type Statement = {
   paidOn: string;
 };
 
+type BankRecon = {
+  bankAccountCode: string;
+  bookBalanceCents: number;
+  statementTotalCents: number;
+  matchedCents: number;
+  unmatchedCents: number;
+  openPayableCents: number;
+  unmatchedStatements: Array<{
+    id: string;
+    reference: string;
+    paidOn: string;
+    cents: number;
+    remainingCents: number;
+    counterparty: string;
+  }>;
+  openClaims: Array<{
+    id: string;
+    purpose: string;
+    payeeName: string;
+    totalCents: number;
+    paidCents: number;
+    unpaidCents: number;
+    occurredOn: string;
+  }>;
+};
+
 function yuan(cents: number) {
   return (cents / 100).toFixed(2);
 }
@@ -79,6 +105,7 @@ export default function Page() {
   const [claimFilter, setClaimFilter] = useState("all");
   const [books, setBooks] = useState<Array<{ id: string; name: string }>>([]);
   const [statements, setStatements] = useState<Statement[]>([]);
+  const [recon, setRecon] = useState<BankRecon | null>(null);
   const [users, setUsers] = useState<Array<User & { active: boolean }>>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
@@ -146,6 +173,15 @@ export default function Page() {
     await refreshBalanceFor(id);
     await refreshClaims(id);
     await refreshStatementsFor(id);
+    await refreshReconFor(id);
+  }
+
+  async function refreshReconFor(id = bookId) {
+    if (!id) return;
+    const payload = await call<{ summary: BankRecon }>(
+      `/api/books/${id}/bank-reconciliation?bankAccountCode=1002`,
+    );
+    setRecon(payload.summary);
   }
 
   async function refreshBalanceFor(id: string) {
@@ -236,6 +272,7 @@ export default function Page() {
     });
     setNotice("银行流水已导入。");
     await refreshStatements();
+    await refreshReconFor();
   }
 
   async function allocateClaim(event: FormEvent<HTMLFormElement>) {
@@ -258,6 +295,7 @@ export default function Page() {
     await refreshBalance();
     await refreshStatements();
     await refreshClaims();
+    await refreshReconFor();
   }
 
   async function reverseClaimAllocation(allocationId: string) {
@@ -280,6 +318,7 @@ export default function Page() {
     await refreshBalance();
     await refreshStatements();
     await refreshClaims();
+    await refreshReconFor();
   }
 
   async function refreshBalance() {
@@ -533,6 +572,50 @@ export default function Page() {
                 : claim ? <p className="mt-3 text-sm text-amber-700">还没有明细附件，提交会被拒绝</p> : null}
               {claim?.entryId ? <p className="mt-1 text-sm">应付分录：{claim.entryId}</p> : null}
               {claim?.paymentEntryId ? <p className="mt-1 text-sm">付款分录：{claim.paymentEntryId}</p> : null}
+            </Card>
+          </section>
+
+          <section className="mt-6">
+            <Card>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle>银行调节（1002）</CardTitle>
+                <Button type="button" disabled={!bookId} onClick={() => refreshReconFor()}>刷新调节</Button>
+              </div>
+              {recon ? (
+                <>
+                  <p className="mt-3 text-sm text-stone-700">
+                    账面 {yuan(recon.bookBalanceCents)} · 流水合计 {yuan(recon.statementTotalCents)} ·
+                    已匹配 {yuan(recon.matchedCents)} · 未匹配 {yuan(recon.unmatchedCents)} ·
+                    待付应付 {yuan(recon.openPayableCents)}
+                  </p>
+                  <div className="mt-3 grid gap-4 md:grid-cols-2 text-sm text-stone-600">
+                    <div>
+                      <p className="font-medium text-stone-800">未匹配流水</p>
+                      <ul className="mt-1 space-y-1">
+                        {recon.unmatchedStatements.length === 0 ? <li>无</li> : null}
+                        {recon.unmatchedStatements.map((row) => (
+                          <li key={row.id}>
+                            {row.reference} · 剩余 {yuan(row.remainingCents)} / {yuan(row.cents)} · {row.counterparty || "—"}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="font-medium text-stone-800">待付款单据</p>
+                      <ul className="mt-1 space-y-1">
+                        {recon.openClaims.length === 0 ? <li>无</li> : null}
+                        {recon.openClaims.map((row) => (
+                          <li key={row.id}>
+                            {row.purpose} · 未付 {yuan(row.unpaidCents)} · {row.payeeName} · {row.id.slice(0, 8)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p className="mt-3 text-sm text-stone-500">选择账套后显示调节汇总。</p>
+              )}
             </Card>
           </section>
 

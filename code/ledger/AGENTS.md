@@ -16,6 +16,7 @@
 | 发票号查重 | `design/invoice-dedup.md` |
 | 银行流水分次付款 | `design/bank-match.md` |
 | 付款匹配撤销红冲 | `design/allocation-reverse.md` |
+| 银行调节汇总 | `design/bank-reconciliation.md` |
 | 期间锁定与未完单检查 | `design/period-close.md` |
 
 ## 本地

@@ -10,6 +10,7 @@ import {
   listBankStatements,
   reverseAllocation,
 } from "./payment";
+import { bankReconciliation } from "./reconciliation";
 
 async function user(username: string, displayName: string, roles: Array<"employee" | "finance" | "gm" | "cashier">) {
   try {
@@ -265,6 +266,15 @@ async function main() {
   assert.equal(rows.find((row) => row.code === "5602")?.balanceCents, 5000);
   assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 0);
   assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, -5000);
+
+  const recon = await bankReconciliation(book.id, "1002");
+  assert.equal(recon.bookBalanceCents, -5000);
+  assert.equal(recon.statementTotalCents, 12800 + 5000);
+  assert.equal(recon.matchedCents, 5000);
+  assert.equal(recon.unmatchedCents, 12800);
+  assert.equal(recon.openPayableCents, 0);
+  assert.equal(recon.unmatchedStatements.length, 1);
+  assert.equal(recon.unmatchedStatements[0]?.remainingCents, 12800);
 
   console.log("claim+bank-match ok");
 }
