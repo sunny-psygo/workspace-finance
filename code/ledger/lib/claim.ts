@@ -265,6 +265,13 @@ export async function applyClaimAction(user: AuthUser, claimId: string, input: A
     await assertClaimItemsHaveAttachments(claim.items);
     await assertInvoicesAvailable(claim.bookId, claim.id, claim.items);
   }
+  if (data.action === "void" && claim.paidCents > 0) {
+    throw new ClaimError(
+      "已有付款核销，不能直接作废。",
+      "CLAIM_HAS_PAYMENT",
+      "先处理已匹配的付款，或走会计更正流程。",
+    );
+  }
   const eventRole = data.action === "submit"
     ? "employee"
     : data.action === "financeApprove" || (data.action === "reject" && userHasRole(user, "finance"))
@@ -293,6 +300,21 @@ export async function applyClaimAction(user: AuthUser, claimId: string, input: A
         tx,
       );
       entryId = entry.id;
+    }
+    if (data.action === "void" && claim.entryId) {
+      await postEntry(
+        claim.bookId,
+        {
+          occurredOn: claim.occurredOn,
+          memo: `作废红冲 ${claim.purpose}`.slice(0, 200),
+          reference: `claim-void:${claim.id}`,
+          postings: [
+            { accountCode: claim.payableAccountCode, side: "debit", cents: claim.totalCents },
+            { accountCode: claim.expenseAccountCode, side: "credit", cents: claim.totalCents },
+          ],
+        },
+        tx,
+      );
     }
 
     const touched = await tx.claim.updateMany({

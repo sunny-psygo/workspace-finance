@@ -90,6 +90,36 @@ async function main() {
   });
   assert.equal(approved.status, "paymentVoucher");
 
+  // 另建一张仅确认应付后作废，确认红冲
+  const voidDraft = await createDraft(employee, {
+    bookId: book.id,
+    department: "行政",
+    costCenter: "公司公共",
+    payeeName: "张三",
+    payeeAccount: "6222",
+    bankName: "测试银行",
+    purpose: "作废样例",
+    occurredOn: "2026-10-04",
+    items: [{ memo: "作废项", cents: 3000, invoiceNo: `VOID-${suffix}` }],
+  });
+  await uploadClaimItemAttachment(employee, voidDraft.id, voidDraft.items[0]!.id, {
+    fileName: "v.pdf",
+    fileBase64: Buffer.from("v").toString("base64"),
+  });
+  await applyClaimAction(employee, voidDraft.id, { action: "submit", expectedRevision: 1, mutationId: "vs" });
+  await applyClaimAction(finance, voidDraft.id, { action: "financeApprove", expectedRevision: 2, mutationId: "vf", remark: "ok" });
+  await applyClaimAction(gm, voidDraft.id, { action: "gmApprove", expectedRevision: 3, mutationId: "vg", remark: "ok" });
+  const voided = await applyClaimAction(gm, voidDraft.id, {
+    action: "void",
+    expectedRevision: 4,
+    mutationId: "vv",
+    remark: "重复报销作废",
+  });
+  assert.equal(voided.status, "voided");
+  let midRows = await trialBalance(book.id);
+  assert.equal(midRows.find((row) => row.code === "5602")?.balanceCents, 12800);
+  assert.equal(midRows.find((row) => row.code === "2241")?.balanceCents, 12800);
+
   const stmt = await importBankStatement(cashier, book.id, {
     paidOn: "2026-10-04",
     cents: 12800,

@@ -405,6 +405,7 @@ export default function Page() {
                 <Button disabled={!claim || !roles.includes("finance") || claim.status !== "financeReview"} onClick={() => runAction("financeApprove", "票据齐全")}>财务通过</Button>
                 <Button disabled={!claim || !roles.includes("gm") || claim.status !== "gmReview"} onClick={() => runAction("gmApprove", "同意")}>总经理通过并入账</Button>
                 <Button disabled={!claim || (!roles.includes("finance") && !roles.includes("gm")) || (claim.status !== "financeReview" && claim.status !== "gmReview")} onClick={() => runAction("reject", "资料不全")}>驳回</Button>
+                <Button disabled={!claim || !roles.includes("gm") || claim.status !== "paymentVoucher" || (claim.paidCents || 0) > 0} onClick={() => runAction("void", "作废")}>作废并红冲</Button>
               </div>
               {claim?.items?.[0]?.attachments?.length
                 ? (
