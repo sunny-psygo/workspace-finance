@@ -339,7 +339,20 @@ export default function Page() {
       yearMonth: form.get("yearMonth"),
       remark: form.get("remark") || "结账",
     });
-    setNotice(`已锁定期间 ${form.get("yearMonth")}`);
+    setNotice(`已锁定期间 ${form.get("yearMonth")}（已结转损益）`);
+    await refreshBalance();
+  }
+
+  async function reopenMonth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    await call(`/api/books/${bookId}/periods/reopen`, {
+      yearMonth: form.get("yearMonth"),
+      remark: form.get("remark") || "反结账",
+    });
+    setNotice(`已反结账 ${form.get("yearMonth")}（已红冲损益结转）`);
+    await refreshBalance();
   }
 
   async function refreshUsers() {
@@ -455,6 +468,11 @@ export default function Page() {
                 <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-09" required disabled={!bookId} />
                 <Input className="mt-2" name="remark" placeholder="结账说明" defaultValue="月结" disabled={!bookId} />
                 <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>锁定期间</Button>
+              </form>
+              <form className="mt-3" onSubmit={reopenMonth}>
+                <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-09" required disabled={!bookId} />
+                <Input className="mt-2" name="remark" placeholder="反结账原因" defaultValue="补凭证" required disabled={!bookId} />
+                <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>反结账</Button>
               </form>
             </Card>
           </section>
