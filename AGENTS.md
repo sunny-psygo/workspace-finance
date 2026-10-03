@@ -78,7 +78,7 @@ HR 可能是 `policies/` `onboarding/`,做系统的人会有 `code/`,
 
 | | |
 |---|---|
-| `koalas-development-philosophy` | 设计与工程判断（在 `.agents/skills/`） |
+| `koalas-development-philosophy` | 设计与工程判断（在 `.codex/skills/`） |
 
 > **新增技能、命令或文档时,同时加进这张表。**
 > 你注意不到的东西等于不存在 —— 一个没被指向的能力,不会被用到第二次。
