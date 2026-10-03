@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { uploadClaimItemAttachment } from "./attachment";
 import { createUser, login } from "./auth";
 import { applyClaimAction, ClaimError, createDraft } from "./claim";
-import { addAccount, openBook, trialBalance } from "./ledger";
+import { openBook, trialBalance } from "./ledger";
 import { allocatePayment, completePayment, importBankStatement } from "./payment";
 
 async function user(username: string, displayName: string, roles: Array<"employee" | "finance" | "gm" | "cashier">) {
@@ -22,9 +22,7 @@ async function main() {
   const cashier = await user(`c_${suffix}`, "出纳赵", ["cashier"]);
 
   const book = await openBook(`报销测试账-${suffix}`);
-  await addAccount(book.id, { code: "5602", name: "管理费用", kind: "expense" });
-  await addAccount(book.id, { code: "2241", name: "其他应付款", kind: "liability" });
-  await addAccount(book.id, { code: "1002", name: "银行存款", kind: "asset" });
+  // openBook 已种子 1002/2241/5602
 
   const draft = await createDraft(employee, {
     bookId: book.id,
