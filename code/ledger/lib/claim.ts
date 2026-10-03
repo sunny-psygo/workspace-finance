@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { assertClaimItemsHaveAttachments } from "./attachment";
 import { AuthUser, userHasAnyRole, userHasRole } from "./auth";
 import { db } from "./db";
 import { postEntry } from "./ledger";
@@ -48,7 +49,7 @@ export type DraftInput = z.input<typeof draftInput>;
 export type ActionInput = z.input<typeof actionInput>;
 
 const claimInclude = {
-  items: true,
+  items: { include: { attachments: true } },
   events: { orderBy: { createdAt: "asc" as const } },
   payment: true,
 };
@@ -186,6 +187,9 @@ export async function applyClaimAction(user: AuthUser, claimId: string, input: A
 
   const fromStatus = claim.status as ClaimStatus;
   const toStatus = nextStatus(data.action, fromStatus);
+  if (data.action === "submit") {
+    await assertClaimItemsHaveAttachments(claim.items);
+  }
   const eventRole = data.action === "submit"
     ? "employee"
     : data.action === "financeApprove" || (data.action === "reject" && userHasRole(user, "finance"))

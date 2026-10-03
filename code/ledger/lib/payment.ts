@@ -21,7 +21,7 @@ const paymentInput = z.object({
 export type PaymentInput = z.input<typeof paymentInput>;
 
 const claimInclude = {
-  items: true,
+  items: { include: { attachments: true } },
   events: { orderBy: { createdAt: "asc" as const } },
   payment: true,
 };

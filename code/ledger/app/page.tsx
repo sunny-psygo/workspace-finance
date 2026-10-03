@@ -29,6 +29,11 @@ type Claim = {
   entryId?: string | null;
   paymentEntryId?: string | null;
   payment?: { voucherNo: string; bankAccountCode: string } | null;
+  items?: Array<{
+    id: string;
+    memo: string;
+    attachments?: Array<{ id: string; fileName: string }>;
+  }>;
 };
 
 function yuan(cents: number) {
@@ -114,8 +119,19 @@ export default function Page() {
       payableAccountCode: form.get("payableAccountCode") || "2241",
       items: [{ memo: String(form.get("itemMemo") || form.get("purpose")), cents: amount }],
     });
-    setClaim(payload.claim);
-    setNotice(`草稿已建：${payload.claim.id}`);
+    const itemId = payload.claim.items?.[0]?.id;
+    let claim = payload.claim;
+    if (itemId) {
+      await call(`/api/claims/${claim.id}/items/${itemId}/attachments`, {
+        fileName: String(form.get("attachmentName") || "发票.txt"),
+        contentType: "text/plain",
+        fileBase64: btoa(unescape(encodeURIComponent(String(form.get("attachmentText") || "invoice-demo")))),
+      });
+      const refreshed = await call<{ claim: Claim }>(`/api/claims/${claim.id}`);
+      claim = refreshed.claim;
+    }
+    setClaim(claim);
+    setNotice(`草稿已建并附票据：${claim.id}`);
   }
 
   async function runAction(action: string, remark?: string) {
@@ -162,7 +178,7 @@ export default function Page() {
     <main className="mx-auto max-w-5xl px-6 py-10">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-stone-500">登录鉴权 · 报销审批 · 付款核销应付</p>
+          <p className="text-sm text-stone-500">登录鉴权 · 明细附件 · 报销审批 · 付款核销应付</p>
           <h1 className="mt-1 text-3xl font-semibold">账本</h1>
           <p className="mt-2 text-stone-600">{notice}</p>
         </div>
@@ -234,7 +250,9 @@ export default function Page() {
                 <Input className="mt-2" name="amount" placeholder="金额（元）" defaultValue="128" required disabled={!bookId} />
                 <Input className="mt-2" name="expenseAccountCode" defaultValue="5602" disabled={!bookId} />
                 <Input className="mt-2" name="payableAccountCode" defaultValue="2241" disabled={!bookId} />
-                <Button className="mt-3" disabled={!bookId || !roles.includes("employee")}>保存草稿</Button>
+                <Input className="mt-2" name="attachmentName" placeholder="附件名" defaultValue="发票.txt" required disabled={!bookId} />
+                <Input className="mt-2" name="attachmentText" placeholder="附件内容（演示）" defaultValue="invoice-demo" required disabled={!bookId} />
+                <Button className="mt-3" disabled={!bookId || !roles.includes("employee")}>保存草稿并上传附件</Button>
               </form>
             </Card>
             <Card>
@@ -250,7 +268,10 @@ export default function Page() {
                 <Button disabled={!claim || !roles.includes("gm") || claim.status !== "gmReview"} onClick={() => runAction("gmApprove", "同意")}>总经理通过并入账</Button>
                 <Button disabled={!claim || (!roles.includes("finance") && !roles.includes("gm")) || (claim.status !== "financeReview" && claim.status !== "gmReview")} onClick={() => runAction("reject", "资料不全")}>驳回</Button>
               </div>
-              {claim?.entryId ? <p className="mt-3 text-sm">应付分录：{claim.entryId}</p> : null}
+              {claim?.items?.[0]?.attachments?.length
+                ? <p className="mt-3 text-sm">明细附件：{claim.items[0].attachments.map((a) => a.fileName).join("、")}</p>
+                : claim ? <p className="mt-3 text-sm text-amber-700">还没有明细附件，提交会被拒绝</p> : null}
+              {claim?.entryId ? <p className="mt-1 text-sm">应付分录：{claim.entryId}</p> : null}
               {claim?.paymentEntryId ? <p className="mt-1 text-sm">付款分录：{claim.paymentEntryId}</p> : null}
             </Card>
           </section>

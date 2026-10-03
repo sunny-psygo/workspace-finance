@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { uploadClaimItemAttachment } from "./attachment";
 import { createUser, login } from "./auth";
 import { applyClaimAction, ClaimError, createDraft } from "./claim";
 import { addAccount, openBook, trialBalance } from "./ledger";
@@ -33,11 +34,29 @@ async function main() {
     payeeAccount: "6222000000000001",
     bankName: "测试银行",
     purpose: "办公用品",
-    occurredOn: "2026-10-03",
+    occurredOn: "2026-10-04",
     items: [{ memo: "打印纸", cents: 12800 }],
   });
   assert.equal(draft.applicant, "张三");
   assert.equal(draft.status, "draft");
+
+  await assert.rejects(
+    () => applyClaimAction(employee, draft.id, {
+      action: "submit",
+      expectedRevision: 1,
+      mutationId: "no-attach",
+    }),
+    (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_ATTACHMENT_REQUIRED",
+  );
+
+  const itemId = draft.items[0]!.id;
+  const attachment = await uploadClaimItemAttachment(employee, draft.id, itemId, {
+    fileName: "发票.pdf",
+    contentType: "application/pdf",
+    fileBase64: Buffer.from("%PDF-demo").toString("base64"),
+  });
+  assert.ok(attachment.id);
+  assert.ok(attachment.storagePath.includes(draft.id));
 
   await assert.rejects(
     () => applyClaimAction(finance, draft.id, {
@@ -54,6 +73,7 @@ async function main() {
     mutationId: "m-submit",
   });
   assert.equal(submitted.status, "financeReview");
+  assert.equal(submitted.items[0]?.attachments.length, 1);
 
   const financed = await applyClaimAction(finance, draft.id, {
     action: "financeApprove",
@@ -77,7 +97,7 @@ async function main() {
       expectedRevision: 4,
       mutationId: "bad-pay",
       voucherNo: "X",
-      paidOn: "2026-10-03",
+      paidOn: "2026-10-04",
       bankAccountCode: "1002",
       remark: "不可",
       fileName: "a.txt",
@@ -89,8 +109,8 @@ async function main() {
   const paid = await completePayment(cashier, draft.id, {
     expectedRevision: 4,
     mutationId: "m-pay",
-    voucherNo: "BANK20261003001",
-    paidOn: "2026-10-03",
+    voucherNo: "BANK20261004001",
+    paidOn: "2026-10-04",
     bankAccountCode: "1002",
     remark: "已付",
     fileName: "receipt.txt",
@@ -98,13 +118,13 @@ async function main() {
   });
   assert.equal(paid.status, "completed");
   assert.ok(paid.paymentEntryId);
-  assert.equal(paid.payment?.voucherNo, "BANK20261003001");
+  assert.equal(paid.payment?.voucherNo, "BANK20261004001");
 
   const again = await completePayment(cashier, draft.id, {
     expectedRevision: 4,
     mutationId: "m-pay",
-    voucherNo: "BANK20261003001",
-    paidOn: "2026-10-03",
+    voucherNo: "BANK20261004001",
+    paidOn: "2026-10-04",
     bankAccountCode: "1002",
     remark: "已付",
     fileName: "receipt.txt",
@@ -118,7 +138,7 @@ async function main() {
   assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 0);
   assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, -12800);
 
-  console.log("claim+payment ok");
+  console.log("claim+attachment+payment ok");
 }
 
 main();

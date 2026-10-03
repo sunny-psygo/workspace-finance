@@ -119,12 +119,27 @@ model Claim {
 }
 
 model ClaimItem {
-  id       String @id
-  claimId  String
-  claim    Claim  @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  category String @default("")
-  memo     String
-  cents    Int
+  id          String            @id
+  claimId     String
+  claim       Claim             @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  category    String            @default("")
+  memo        String
+  cents       Int
+  attachments ClaimAttachment[]
+}
+
+model ClaimAttachment {
+  id          String    @id
+  claimItemId String
+  claimItem   ClaimItem @relation(fields: [claimItemId], references: [id], onDelete: Cascade)
+  fileName    String
+  contentType String    @default("application/octet-stream")
+  byteSize    Int
+  storagePath String
+  uploadedBy  String
+  createdAt   DateTime  @default(now())
+
+  @@index([claimItemId])
 }
 
 model ClaimEvent {
