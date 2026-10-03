@@ -79,6 +79,22 @@ async function main() {
     () => closePeriod(book.id, "2026-11", "财务李", "有未审单"),
     (error: unknown) => error instanceof LedgerError && error.code === "PERIOD_HAS_OPEN_CLAIMS",
   );
+
+  await db.bankStatement.create({
+    data: {
+      id: `stmt-${book.id.slice(0, 8)}`,
+      bookId: book.id,
+      paidOn: "2026-12-01",
+      cents: 1000,
+      remainingCents: 1000,
+      bankAccountCode: "1002",
+      reference: `UNMATCH-${book.id.slice(0, 6)}`,
+    },
+  });
+  await assert.rejects(
+    () => closePeriod(book.id, "2026-12", "财务李", "有未匹配流水"),
+    (error: unknown) => error instanceof LedgerError && error.code === "PERIOD_HAS_UNMATCHED_STATEMENTS",
+  );
   await postEntry(book.id, {
     occurredOn: "2026-10-15",
     memo: "未锁月",

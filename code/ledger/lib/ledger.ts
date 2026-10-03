@@ -134,6 +134,26 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     );
   }
 
+  const unmatchedStatements = await db.bankStatement.findMany({
+    where: {
+      bookId,
+      paidOn: { startsWith: `${yearMonth}-` },
+      remainingCents: { gt: 0 },
+    },
+    select: { id: true, reference: true, remainingCents: true },
+    take: 20,
+  });
+  if (unmatchedStatements.length) {
+    const detail = unmatchedStatements
+      .map((row) => `${row.reference}:${row.remainingCents}分`)
+      .join("、");
+    throw new LedgerError(
+      `期间 ${yearMonth} 仍有未匹配银行流水：${detail}。`,
+      "PERIOD_HAS_UNMATCHED_STATEMENTS",
+      "先匹配或撤销多余流水，再结账。",
+    );
+  }
+
   await ensureDefaultAccounts(bookId);
 
   return db.$transaction(async (tx) => {
