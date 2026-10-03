@@ -18,6 +18,7 @@
 | 付款匹配撤销红冲 | `design/allocation-reverse.md` |
 | 银行调节汇总 | `design/bank-reconciliation.md` |
 | 期间锁定与未完单检查 | `design/period-close.md` |
+| 结账结转损益 | `design/pl-close.md` |
 
 ## 本地
 

@@ -74,6 +74,39 @@ export async function listPeriods(bookId: string) {
   });
 }
 
+function lastDayOfMonth(yearMonth: string) {
+  const [yearText, monthText] = yearMonth.split("-");
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return `${yearMonth}-${String(day).padStart(2, "0")}`;
+}
+
+/** 该月收入/费用科目发生额（按正常余额方向净额；正数表示有余额需结转）。 */
+async function monthPlMovements(bookId: string, yearMonth: string, client: DbClient = db) {
+  const accounts = await client.account.findMany({
+    where: { bookId, kind: { in: ["income", "expense"] } },
+    include: {
+      postings: {
+        where: { entry: { occurredOn: { startsWith: `${yearMonth}-` } } },
+      },
+    },
+    orderBy: { code: "asc" },
+  });
+  return accounts
+    .map((account) => {
+      const debit = account.postings
+        .filter((line) => line.side === "debit")
+        .reduce((sum, line) => sum + line.cents, 0);
+      const credit = account.postings
+        .filter((line) => line.side === "credit")
+        .reduce((sum, line) => sum + line.cents, 0);
+      const net = account.normal === "debit" ? debit - credit : credit - debit;
+      return { code: account.code, kind: account.kind as "income" | "expense", netCents: net };
+    })
+    .filter((row) => row.netCents !== 0);
+}
+
 export async function closePeriod(bookId: string, yearMonth: string, lockedBy: string, remark = "") {
   if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
     throw new LedgerError("期间格式应为 YYYY-MM。", "PERIOD_INVALID", "例如 2026-09。");
@@ -101,14 +134,61 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     );
   }
 
-  return db.accountingPeriod.create({
-    data: {
-      id: randomUUID(),
-      bookId,
-      yearMonth,
-      lockedBy,
-      remark,
-    },
+  await ensureDefaultAccounts(bookId);
+
+  return db.$transaction(async (tx) => {
+    const movements = await monthPlMovements(bookId, yearMonth, tx);
+    if (movements.length) {
+      const postings: Array<{ accountCode: string; side: "debit" | "credit"; cents: number }> = [];
+      let profitDebit = 0;
+      let profitCredit = 0;
+      for (const row of movements) {
+        if (row.kind === "expense") {
+          if (row.netCents > 0) {
+            postings.push({ accountCode: row.code, side: "credit", cents: row.netCents });
+            profitDebit += row.netCents;
+          } else {
+            const cents = Math.abs(row.netCents);
+            postings.push({ accountCode: row.code, side: "debit", cents });
+            profitCredit += cents;
+          }
+        } else {
+          if (row.netCents > 0) {
+            postings.push({ accountCode: row.code, side: "debit", cents: row.netCents });
+            profitCredit += row.netCents;
+          } else {
+            const cents = Math.abs(row.netCents);
+            postings.push({ accountCode: row.code, side: "credit", cents });
+            profitDebit += cents;
+          }
+        }
+      }
+      if (profitDebit > profitCredit) {
+        postings.push({ accountCode: "4103", side: "debit", cents: profitDebit - profitCredit });
+      } else if (profitCredit > profitDebit) {
+        postings.push({ accountCode: "4103", side: "credit", cents: profitCredit - profitDebit });
+      }
+      await postEntry(
+        bookId,
+        {
+          occurredOn: lastDayOfMonth(yearMonth),
+          memo: `${yearMonth} 结转损益`,
+          reference: `pl-close:${yearMonth}`,
+          postings,
+        },
+        tx,
+      );
+    }
+
+    return tx.accountingPeriod.create({
+      data: {
+        id: randomUUID(),
+        bookId,
+        yearMonth,
+        lockedBy,
+        remark,
+      },
+    });
   });
 }
 
@@ -119,15 +199,46 @@ export async function reopenPeriod(bookId: string, yearMonth: string, remark: st
   if (!remark.trim()) {
     throw new LedgerError("反结账必须填写原因。", "PERIOD_INVALID", "在 remark 写原因。");
   }
-  const result = await db.accountingPeriod.deleteMany({ where: { bookId, yearMonth } });
-  if (result.count !== 1) {
-    throw new LedgerError(`期间 ${yearMonth} 未锁定。`, "PERIOD_INVALID", "无需反结账。");
-  }
+
+  await db.$transaction(async (tx) => {
+    const result = await tx.accountingPeriod.deleteMany({ where: { bookId, yearMonth } });
+    if (result.count !== 1) {
+      throw new LedgerError(`期间 ${yearMonth} 未锁定。`, "PERIOD_INVALID", "无需反结账。");
+    }
+
+    const closing = await tx.entry.findUnique({
+      where: { bookId_reference: { bookId, reference: `pl-close:${yearMonth}` } },
+      include: { postings: { include: { account: true } } },
+    });
+    if (!closing) return;
+
+    const reverseRef = `pl-reopen:${yearMonth}`;
+    const existingReverse = await tx.entry.findUnique({
+      where: { bookId_reference: { bookId, reference: reverseRef } },
+    });
+    if (existingReverse) return;
+
+    await postEntry(
+      bookId,
+      {
+        occurredOn: closing.occurredOn,
+        memo: `${yearMonth} 反结账红冲损益`,
+        reference: reverseRef,
+        postings: closing.postings.map((line) => ({
+          accountCode: line.account.code,
+          side: line.side === "debit" ? "credit" : "debit",
+          cents: line.cents,
+        })),
+      },
+      tx,
+    );
+  });
 }
 
 const defaultAccounts: AccountInput[] = [
   { code: "1002", name: "银行存款", kind: "asset" },
   { code: "2241", name: "其他应付款", kind: "liability" },
+  { code: "4103", name: "本年利润", kind: "equity" },
   { code: "5602", name: "管理费用", kind: "expense" },
 ];
 

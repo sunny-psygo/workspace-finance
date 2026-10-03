@@ -7,7 +7,7 @@ async function main() {
   const seeded = await db.account.findMany({ where: { bookId: book.id }, orderBy: { code: "asc" } });
   assert.deepEqual(
     seeded.map((row) => row.code),
-    ["1002", "2241", "5602"],
+    ["1002", "2241", "4103", "5602"],
   );
   await addAccount(book.id, { code: "1001", name: "库存现金", kind: "asset" });
   await addAccount(book.id, { code: "5001", name: "管理费用手工", kind: "expense" });
@@ -98,6 +98,16 @@ async function main() {
       { accountCode: "1001", side: "credit", cents: 50 },
     ],
   });
+
+  // 结转损益：只清当月发生额；九月的 50 分费用仍留在 5001
+  await closePeriod(book.id, "2026-10", "财务李", "十月结账");
+  const closedRows = await trialBalance(book.id);
+  assert.equal(closedRows.find((row) => row.code === "5001")?.balanceCents, 50);
+  assert.equal(closedRows.find((row) => row.code === "4103")?.balanceCents, -12900);
+  await reopenPeriod(book.id, "2026-10", "改数");
+  const reopenedRows = await trialBalance(book.id);
+  assert.equal(reopenedRows.find((row) => row.code === "5001")?.balanceCents, 12950);
+  assert.equal(reopenedRows.find((row) => row.code === "4103")?.balanceCents, 0);
 
   console.log("ledger ok");
 }
