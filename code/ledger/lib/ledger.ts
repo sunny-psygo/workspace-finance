@@ -125,10 +125,27 @@ export async function reopenPeriod(bookId: string, yearMonth: string, remark: st
   }
 }
 
+const defaultAccounts: AccountInput[] = [
+  { code: "1002", name: "银行存款", kind: "asset" },
+  { code: "2241", name: "其他应付款", kind: "liability" },
+  { code: "5602", name: "管理费用", kind: "expense" },
+];
+
+export async function ensureDefaultAccounts(bookId: string) {
+  for (const account of defaultAccounts) {
+    const existing = await db.account.findUnique({
+      where: { bookId_code: { bookId, code: account.code } },
+    });
+    if (!existing) await addAccount(bookId, account);
+  }
+}
+
 export async function openBook(name: string, currency = "CNY") {
   const trimmed = name.trim();
   if (!trimmed) throw new LedgerError("账套名称是空的。", "BOOK_NAME_REQUIRED", "传入非空名称。");
-  return db.book.create({ data: { id: randomUUID(), name: trimmed, currency } });
+  const book = await db.book.create({ data: { id: randomUUID(), name: trimmed, currency } });
+  await ensureDefaultAccounts(book.id);
+  return book;
 }
 
 export async function addAccount(bookId: string, input: AccountInput) {
