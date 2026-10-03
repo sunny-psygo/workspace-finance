@@ -80,3 +80,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Next.js
+.next/
+**/.next/

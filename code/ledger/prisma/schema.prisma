@@ -1,0 +1,119 @@
+// 一本账：账户是科目树，分录是一次平衡的记账，过账行是分录落到账户上的金额。
+// 金额用分，避免浮点。方向只有借、贷。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Book {
+  id        String   @id
+  name      String
+  currency  String   @default("CNY")
+  createdAt DateTime @default(now())
+  accounts  Account[]
+  entries   Entry[]
+  claims    Claim[]
+}
+
+model Account {
+  id        String   @id
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id])
+  code      String
+  name      String
+  // asset | liability | equity | income | expense
+  kind      String
+  parentId  String?
+  normal    String
+  createdAt DateTime @default(now())
+  postings  Posting[]
+
+  @@unique([bookId, code])
+}
+
+model Entry {
+  id          String    @id
+  bookId      String
+  book        Book      @relation(fields: [bookId], references: [id])
+  occurredOn  String
+  memo        String
+  // 调用方提供的幂等键。同一本账里重复提交返回原分录。
+  reference   String?
+  createdAt   DateTime  @default(now())
+  postings    Posting[]
+
+  @@unique([bookId, reference])
+}
+
+model Posting {
+  id        String  @id
+  entryId   String
+  entry     Entry   @relation(fields: [entryId], references: [id])
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+  // debit | credit
+  side      String
+  // 金额，单位：分。必须为正。
+  cents     Int
+}
+
+// 报销单据：审批状态机。总经理通过时调用账本 postEntry，不另做一套账。
+model Claim {
+  id                  String      @id
+  bookId              String
+  book                Book        @relation(fields: [bookId], references: [id])
+  // 本版只做 expense
+  requestType         String      @default("expense")
+  status              String      @default("draft")
+  revision            Int         @default(0)
+  lastMutationId      String?
+  applicant           String
+  department          String
+  costCenter          String
+  payeeName           String
+  payeeAccount        String
+  bankName            String
+  purpose             String
+  occurredOn          String
+  expenseAccountCode  String      @default("5602")
+  payableAccountCode  String      @default("2241")
+  totalCents          Int         @default(0)
+  entryId             String?
+  remark              String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  items               ClaimItem[]
+  events              ClaimEvent[]
+
+  @@index([bookId, status])
+}
+
+model ClaimItem {
+  id       String @id
+  claimId  String
+  claim    Claim  @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  category String @default("")
+  memo     String
+  cents    Int
+}
+
+model ClaimEvent {
+  id         String   @id
+  claimId    String
+  claim      Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  action     String
+  fromStatus String
+  toStatus   String
+  actor      String
+  role       String
+  mutationId String
+  remark     String?
+  createdAt  DateTime @default(now())
+
+  @@unique([claimId, mutationId])
+}

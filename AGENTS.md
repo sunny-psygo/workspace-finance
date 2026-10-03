@@ -68,6 +68,18 @@ HR 可能是 `policies/` `onboarding/`,做系统的人会有 `code/`,
 | `docs/design-rationale.md` | 每项设定的理由与代价。**改规范前先读** |
 | `docs/adapting-this-template.md` | **把这个模板落地到你的团队** |
 
+**目录**:
+
+| | |
+|---|---|
+| `code/ledger/` | 财务记账内核 + 报销审批。说明见其中 `AGENTS.md` / `overview.html`，设计见 `design/claims.md` |
+
+**技能（额外）**:
+
+| | |
+|---|---|
+| `koalas-development-philosophy` | 设计与工程判断（在 `.agents/skills/`） |
+
 > **新增技能、命令或文档时,同时加进这张表。**
 > 你注意不到的东西等于不存在 —— 一个没被指向的能力,不会被用到第二次。
 

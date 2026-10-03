@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>账本 · 说明</title>
+<style>
+  body { max-width: 760px; margin: 40px auto; font: 16px/1.6 "Source Han Sans SC", sans-serif; color: #1c1917; }
+  h1 { font-size: 28px; }
+  code { background: #f5f5f4; padding: 1px 4px; }
+</style>
+<body>
+<p>更新方式：能力变了，就改这一页的顶部三节，和代码放在同一次提交。</p>
+<h1>账本</h1>
+<h2>上次以来</h2>
+<p>接上系统 PostgreSQL；报销草稿→财务→总经理闭环已通，总经理通过时借费用贷应付写入账本。代码在仓库 <code>code/ledger/</code>。</p>
+<h2>需要你</h2>
+<p>没有待决定的事。本机 sudo 密码建议改一次（曾用于安装 PostgreSQL）。生产权限与附件上传还没做。</p>
+<h2>现状</h2>
+<p>系统 PostgreSQL 18 在 <code>127.0.0.1:5432</code>，库名 ledger。领域测试覆盖账本平衡/幂等，以及报销状态机与入账。页面 <code>http://127.0.0.1:3210</code>。未做登录、附件、付款回单、工资、结账。</p>
+<h2>这是什么</h2>
+<p>复式记账只有一件事：一笔业务写成若干借、贷，两边金额相等，然后落到账户上。报销是这笔分录的来源，不是另一套账。</p>
+<p>设计全文：<a href="design/claims.md">design/claims.md</a>。</p>
+</body>
