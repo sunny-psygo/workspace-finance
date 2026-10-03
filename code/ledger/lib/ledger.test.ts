@@ -3,8 +3,14 @@ import { addAccount, closePeriod, LedgerError, openBook, postEntry, reopenPeriod
 
 async function main() {
   const book = await openBook(`测试账-${Date.now().toString(36)}`);
+  const { db } = await import("./db");
+  const seeded = await db.account.findMany({ where: { bookId: book.id }, orderBy: { code: "asc" } });
+  assert.deepEqual(
+    seeded.map((row) => row.code),
+    ["1002", "2241", "5602"],
+  );
   await addAccount(book.id, { code: "1001", name: "库存现金", kind: "asset" });
-  await addAccount(book.id, { code: "5001", name: "管理费用", kind: "expense" });
+  await addAccount(book.id, { code: "5001", name: "管理费用手工", kind: "expense" });
   await postEntry(book.id, {
     occurredOn: "2026-10-03",
     memo: "办公费",
@@ -52,7 +58,6 @@ async function main() {
     (error: unknown) => error instanceof LedgerError && error.code === "PERIOD_LOCKED",
   );
 
-  const { db } = await import("./db");
   await db.claim.create({
     data: {
       id: `open-${book.id.slice(0, 8)}`,
