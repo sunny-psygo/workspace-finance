@@ -212,6 +212,17 @@ export default function Page() {
     setStatements(payload.statements);
   }
 
+  async function closeMonth(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    await call(`/api/books/${bookId}/periods/close`, {
+      yearMonth: form.get("yearMonth"),
+      remark: form.get("remark") || "结账",
+    });
+    setNotice(`已锁定期间 ${form.get("yearMonth")}`);
+  }
+
   const roles = user?.roles ?? [];
 
   return (
@@ -269,9 +280,14 @@ export default function Page() {
               </form>
             </Card>
             <Card>
-              <CardTitle>当前账套</CardTitle>
+              <CardTitle>当前账套 / 结账</CardTitle>
               <p className="mt-3 break-all text-sm text-stone-600">{bookId || "尚未开账"}</p>
               <Button className="mt-3" disabled={!bookId} onClick={refreshBalance}>刷新试算</Button>
+              <form className="mt-4" onSubmit={closeMonth}>
+                <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-09" required disabled={!bookId} />
+                <Input className="mt-2" name="remark" placeholder="结账说明" defaultValue="月结" disabled={!bookId} />
+                <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>锁定期间</Button>
+              </form>
             </Card>
           </section>
 

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { addAccount, LedgerError, openBook, postEntry, trialBalance } from "./ledger";
+import { addAccount, closePeriod, LedgerError, openBook, postEntry, reopenPeriod, trialBalance } from "./ledger";
 
 async function main() {
-  const book = await openBook("测试账");
+  const book = await openBook(`测试账-${Date.now().toString(36)}`);
   await addAccount(book.id, { code: "1001", name: "库存现金", kind: "asset" });
   await addAccount(book.id, { code: "5001", name: "管理费用", kind: "expense" });
   await postEntry(book.id, {
@@ -38,6 +38,39 @@ async function main() {
     }),
     (error: unknown) => error instanceof LedgerError && error.code === "ENTRY_UNBALANCED",
   );
+
+  await closePeriod(book.id, "2026-09", "财务李", "九月结账");
+  await assert.rejects(
+    () => postEntry(book.id, {
+      occurredOn: "2026-09-15",
+      memo: "锁期测试",
+      postings: [
+        { accountCode: "5001", side: "debit", cents: 100 },
+        { accountCode: "1001", side: "credit", cents: 100 },
+      ],
+    }),
+    (error: unknown) => error instanceof LedgerError && error.code === "PERIOD_LOCKED",
+  );
+  await postEntry(book.id, {
+    occurredOn: "2026-10-15",
+    memo: "未锁月",
+    reference: "open-oct",
+    postings: [
+      { accountCode: "5001", side: "debit", cents: 100 },
+      { accountCode: "1001", side: "credit", cents: 100 },
+    ],
+  });
+  await reopenPeriod(book.id, "2026-09", "补凭证");
+  await postEntry(book.id, {
+    occurredOn: "2026-09-16",
+    memo: "反结账后",
+    reference: "reopened-sep",
+    postings: [
+      { accountCode: "5001", side: "debit", cents: 50 },
+      { accountCode: "1001", side: "credit", cents: 50 },
+    ],
+  });
+
   console.log("ledger ok");
 }
 

@@ -34,14 +34,28 @@ model Session {
 }
 
 model Book {
-  id         String          @id
+  id         String              @id
   name       String
-  currency   String          @default("CNY")
-  createdAt  DateTime        @default(now())
+  currency   String              @default("CNY")
+  createdAt  DateTime            @default(now())
   accounts   Account[]
   entries    Entry[]
   claims     Claim[]
   statements BankStatement[]
+  periods    AccountingPeriod[]
+}
+
+model AccountingPeriod {
+  id        String   @id
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id])
+  // YYYY-MM
+  yearMonth String
+  lockedAt  DateTime @default(now())
+  lockedBy  String
+  remark    String   @default("")
+
+  @@unique([bookId, yearMonth])
 }
 
 model Account {

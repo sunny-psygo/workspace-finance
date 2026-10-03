@@ -49,6 +49,63 @@ const entryInput = z.object({
 export type AccountInput = z.infer<typeof accountInput>;
 export type EntryInput = z.infer<typeof entryInput>;
 
+export function yearMonthOf(occurredOn: string) {
+  return occurredOn.slice(0, 7);
+}
+
+async function assertPeriodOpen(bookId: string, occurredOn: string, client: DbClient) {
+  const yearMonth = yearMonthOf(occurredOn);
+  const locked = await client.accountingPeriod.findUnique({
+    where: { bookId_yearMonth: { bookId, yearMonth } },
+  });
+  if (locked) {
+    throw new LedgerError(
+      `会计期间 ${yearMonth} 已结账，不能再过账。`,
+      "PERIOD_LOCKED",
+      "改到未锁月份，或由财务反结账后再试。",
+    );
+  }
+}
+
+export async function listPeriods(bookId: string) {
+  return db.accountingPeriod.findMany({
+    where: { bookId },
+    orderBy: { yearMonth: "desc" },
+  });
+}
+
+export async function closePeriod(bookId: string, yearMonth: string, lockedBy: string, remark = "") {
+  if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
+    throw new LedgerError("期间格式应为 YYYY-MM。", "PERIOD_INVALID", "例如 2026-09。");
+  }
+  const existing = await db.accountingPeriod.findUnique({
+    where: { bookId_yearMonth: { bookId, yearMonth } },
+  });
+  if (existing) return existing;
+  return db.accountingPeriod.create({
+    data: {
+      id: randomUUID(),
+      bookId,
+      yearMonth,
+      lockedBy,
+      remark,
+    },
+  });
+}
+
+export async function reopenPeriod(bookId: string, yearMonth: string, remark: string) {
+  if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
+    throw new LedgerError("期间格式应为 YYYY-MM。", "PERIOD_INVALID", "例如 2026-09。");
+  }
+  if (!remark.trim()) {
+    throw new LedgerError("反结账必须填写原因。", "PERIOD_INVALID", "在 remark 写原因。");
+  }
+  const result = await db.accountingPeriod.deleteMany({ where: { bookId, yearMonth } });
+  if (result.count !== 1) {
+    throw new LedgerError(`期间 ${yearMonth} 未锁定。`, "PERIOD_INVALID", "无需反结账。");
+  }
+}
+
 export async function openBook(name: string, currency = "CNY") {
   const trimmed = name.trim();
   if (!trimmed) throw new LedgerError("账套名称是空的。", "BOOK_NAME_REQUIRED", "传入非空名称。");
@@ -103,6 +160,7 @@ export async function postEntry(bookId: string, input: EntryInput, client: DbCli
     });
     if (existing) return existing;
   }
+  await assertPeriodOpen(bookId, data.occurredOn, client);
   const codes = [...new Set(data.postings.map((line) => line.accountCode))];
   const accounts = await client.account.findMany({ where: { bookId, code: { in: codes } } });
   const byCode = new Map(accounts.map((account) => [account.code, account]));
