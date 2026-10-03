@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
+import { AuthError } from "./auth";
 import { ClaimError } from "./claim";
 import { LedgerError } from "./ledger";
 
 export function fail(error: unknown) {
+  if (error instanceof AuthError) {
+    const status = error.code === "AUTH_REQUIRED"
+      ? 401
+      : error.code === "AUTH_FORBIDDEN"
+        ? 403
+        : 400;
+    return NextResponse.json(
+      { ok: false, code: error.code, message: error.message, next: error.next },
+      { status },
+    );
+  }
   if (error instanceof LedgerError || error instanceof ClaimError) {
     const status = error.code === "CLAIM_REVISION_CONFLICT" || error.code === "CLAIM_STATUS_CHANGED"
       ? 409

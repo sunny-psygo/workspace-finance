@@ -10,6 +10,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id           String    @id
+  username     String    @unique
+  displayName  String
+  // bcrypt 哈希，绝不存明文
+  passwordHash String
+  // 逗号分隔：employee,finance,gm,cashier
+  roles        String
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
 model Book {
   id        String   @id
   name      String
@@ -84,11 +107,13 @@ model Claim {
   payableAccountCode  String      @default("2241")
   totalCents          Int         @default(0)
   entryId             String?
+  paymentEntryId      String?
   remark              String?
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   items               ClaimItem[]
   events              ClaimEvent[]
+  payment             PaymentVoucher?
 
   @@index([bookId, status])
 }
@@ -116,4 +141,21 @@ model ClaimEvent {
   createdAt  DateTime @default(now())
 
   @@unique([claimId, mutationId])
+}
+
+// 付款回单：证据 + 全额核销应付（借应付、贷银行）
+model PaymentVoucher {
+  id               String   @id
+  claimId          String   @unique
+  claim            Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  voucherNo        String
+  paidOn           String
+  bankAccountCode  String
+  cents            Int
+  fileName         String
+  storagePath      String
+  remark           String
+  entryId          String
+  uploadedBy       String
+  createdAt        DateTime @default(now())
 }

@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "db": "tsx scripts/postgres.ts",
-    "test": "prisma db push --skip-generate && tsx lib/ledger.test.ts && tsx lib/claim.test.ts",
+    "seed": "tsx scripts/seed.ts",
+    "test": "prisma db push --skip-generate && tsx lib/ledger.test.ts && tsx lib/auth.test.ts && tsx lib/claim.test.ts",
     "dev": "next dev --port 3210"
   },
   "keywords": [],

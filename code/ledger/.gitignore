@@ -2,6 +2,7 @@ node_modules
 .next
 .env
 .pglite
+data
 dist
 .DS_Store
 tsconfig.tsbuildinfo

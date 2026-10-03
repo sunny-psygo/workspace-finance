@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { AuthUser, userHasAnyRole, userHasRole } from "./auth";
 import { db } from "./db";
 import { postEntry } from "./ledger";
 
@@ -13,10 +14,7 @@ export class ClaimError extends Error {
   }
 }
 
-const roles = ["employee", "finance", "gm"] as const;
-export type ClaimRole = (typeof roles)[number];
-
-const claimStatuses = ["draft", "financeReview", "gmReview", "paymentVoucher", "rejected", "voided"] as const;
+const claimStatuses = ["draft", "financeReview", "gmReview", "paymentVoucher", "rejected", "voided", "completed"] as const;
 export type ClaimStatus = (typeof claimStatuses)[number];
 
 const itemInput = z.object({
@@ -27,7 +25,6 @@ const itemInput = z.object({
 
 const draftInput = z.object({
   bookId: z.string().trim().min(1),
-  applicant: z.string().trim().min(1).max(40),
   department: z.string().trim().min(1).max(40),
   costCenter: z.string().trim().min(1).max(40),
   payeeName: z.string().trim().min(1).max(80),
@@ -38,13 +35,10 @@ const draftInput = z.object({
   expenseAccountCode: z.string().trim().min(1).max(32).optional().default("5602"),
   payableAccountCode: z.string().trim().min(1).max(32).optional().default("2241"),
   items: z.array(itemInput).min(1),
-  actor: z.string().trim().min(1).max(40),
 });
 
 const actionInput = z.object({
   action: z.enum(["submit", "financeApprove", "gmApprove", "reject", "void"]),
-  actor: z.string().trim().min(1).max(40),
-  role: z.enum(roles),
   expectedRevision: z.number().int().nonnegative(),
   mutationId: z.string().trim().min(1).max(120),
   remark: z.string().trim().max(200).optional(),
@@ -53,13 +47,17 @@ const actionInput = z.object({
 export type DraftInput = z.input<typeof draftInput>;
 export type ActionInput = z.input<typeof actionInput>;
 
-const claimInclude = { items: true, events: { orderBy: { createdAt: "asc" as const } } };
+const claimInclude = {
+  items: true,
+  events: { orderBy: { createdAt: "asc" as const } },
+  payment: true,
+};
 
-function roleAllowed(action: ActionInput["action"], role: ClaimRole) {
-  if (action === "submit") return role === "employee";
-  if (action === "financeApprove") return role === "finance";
-  if (action === "gmApprove" || action === "void") return role === "gm";
-  if (action === "reject") return role === "finance" || role === "gm";
+function roleAllowed(action: ActionInput["action"], user: AuthUser) {
+  if (action === "submit") return userHasRole(user, "employee");
+  if (action === "financeApprove") return userHasRole(user, "finance");
+  if (action === "gmApprove" || action === "void") return userHasRole(user, "gm");
+  if (action === "reject") return userHasAnyRole(user, ["finance", "gm"]);
   return false;
 }
 
@@ -82,7 +80,10 @@ async function loadClaim(claimId: string) {
   return claim;
 }
 
-export async function createDraft(input: DraftInput) {
+export async function createDraft(user: AuthUser, input: DraftInput) {
+  if (!userHasRole(user, "employee")) {
+    throw new ClaimError("只有员工可以建报销草稿。", "CLAIM_FORBIDDEN", "换员工账号登录。");
+  }
   const parsed = draftInput.safeParse(input);
   if (!parsed.success) {
     throw new ClaimError(
@@ -102,7 +103,7 @@ export async function createDraft(input: DraftInput) {
       requestType: "expense",
       status: "draft",
       revision: 1,
-      applicant: data.applicant,
+      applicant: user.displayName,
       department: data.department,
       costCenter: data.costCenter,
       payeeName: data.payeeName,
@@ -127,7 +128,7 @@ export async function createDraft(input: DraftInput) {
           action: "create",
           fromStatus: "draft",
           toStatus: "draft",
-          actor: data.actor,
+          actor: user.displayName,
           role: "employee",
           mutationId: `create-${randomUUID()}`,
         },
@@ -151,7 +152,7 @@ export async function getClaim(claimId: string) {
   return loadClaim(claimId);
 }
 
-export async function applyClaimAction(claimId: string, input: ActionInput) {
+export async function applyClaimAction(user: AuthUser, claimId: string, input: ActionInput) {
   const parsed = actionInput.safeParse(input);
   if (!parsed.success) {
     throw new ClaimError(
@@ -161,8 +162,8 @@ export async function applyClaimAction(claimId: string, input: ActionInput) {
     );
   }
   const data = parsed.data;
-  if (!roleAllowed(data.action, data.role)) {
-    throw new ClaimError(`角色 ${data.role} 不能执行 ${data.action}。`, "CLAIM_FORBIDDEN", "换有权限的角色再试。");
+  if (!roleAllowed(data.action, user)) {
+    throw new ClaimError(`当前账号不能执行 ${data.action}。`, "CLAIM_FORBIDDEN", "换有权限的账号登录。");
   }
   if ((data.action === "reject" || data.action === "void") && !data.remark?.trim()) {
     throw new ClaimError("驳回或作废必须填写原因。", "CLAIM_INVALID", "在 remark 里写原因。");
@@ -185,6 +186,13 @@ export async function applyClaimAction(claimId: string, input: ActionInput) {
 
   const fromStatus = claim.status as ClaimStatus;
   const toStatus = nextStatus(data.action, fromStatus);
+  const eventRole = data.action === "submit"
+    ? "employee"
+    : data.action === "financeApprove" || (data.action === "reject" && userHasRole(user, "finance"))
+      ? "finance"
+      : data.action === "void" || data.action === "gmApprove" || data.action === "reject"
+        ? "gm"
+        : user.roles[0];
 
   return db.$transaction(async (tx) => {
     let entryId = claim.entryId;
@@ -232,8 +240,8 @@ export async function applyClaimAction(claimId: string, input: ActionInput) {
         action: data.action,
         fromStatus,
         toStatus,
-        actor: data.actor,
-        role: data.role,
+        actor: user.displayName,
+        role: eventRole,
         mutationId: data.mutationId,
         remark: data.remark,
       },
