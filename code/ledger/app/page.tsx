@@ -72,6 +72,7 @@ export default function Page() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [books, setBooks] = useState<Array<{ id: string; name: string }>>([]);
   const [statements, setStatements] = useState<Statement[]>([]);
+  const [users, setUsers] = useState<Array<User & { active: boolean }>>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
   useEffect(() => {
@@ -268,6 +269,28 @@ export default function Page() {
       remark: form.get("remark") || "结账",
     });
     setNotice(`已锁定期间 ${form.get("yearMonth")}`);
+  }
+
+  async function refreshUsers() {
+    const payload = await call<{ users: Array<User & { active: boolean }> }>("/api/auth/users");
+    setUsers(payload.users);
+  }
+
+  async function createManagedUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const roles = String(form.get("roles") || "employee")
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    await call("/api/auth/users", {
+      username: form.get("username"),
+      displayName: form.get("displayName"),
+      password: form.get("password"),
+      roles,
+    });
+    setNotice("账号已创建");
+    await refreshUsers();
   }
 
   const roles = user?.roles ?? [];
@@ -473,6 +496,38 @@ export default function Page() {
               </form>
             </Card>
           </section>
+
+          {roles.includes("gm") ? (
+            <section className="mt-6">
+              <Card>
+                <form onSubmit={createManagedUser}>
+                  <CardTitle>账号管理（总经理）</CardTitle>
+                  <Input className="mt-3" name="username" placeholder="用户名" required />
+                  <Input className="mt-2" name="displayName" placeholder="显示名" required />
+                  <Input className="mt-2" name="password" type="password" placeholder="初始密码至少8位" required />
+                  <Input className="mt-2" name="roles" placeholder="角色，逗号分隔" defaultValue="employee" required />
+                  <Button className="mt-3" type="submit">创建账号</Button>
+                  <Button className="mt-3 ml-2" type="button" onClick={refreshUsers}>刷新列表</Button>
+                </form>
+                <ul className="mt-3 space-y-1 text-sm">
+                  {users.map((row) => (
+                    <li key={row.id} className="flex flex-wrap items-center gap-2">
+                      <span>{row.username} · {row.displayName} · {row.roles.join(",")} · {row.active ? "启用" : "停用"}</span>
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          await call(`/api/auth/users/${row.id}/active`, { active: !row.active });
+                          await refreshUsers();
+                        }}
+                      >
+                        {row.active ? "停用" : "启用"}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </section>
+          ) : null}
 
           <section className="mt-8 overflow-hidden rounded-lg bg-white shadow-sm">
             <table className="w-full text-left text-sm">

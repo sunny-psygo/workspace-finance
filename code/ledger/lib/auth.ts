@@ -98,6 +98,22 @@ export async function createUser(input: z.input<typeof createUserInput>) {
   return publicUser(user);
 }
 
+export async function listUsers() {
+  const users = await db.user.findMany({ orderBy: { username: "asc" }, take: 200 });
+  return users.map((user) => ({ ...publicUser(user), active: user.active }));
+}
+
+export async function setUserActive(userId: string, active: boolean) {
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user) throw new AuthError("用户不存在。", "AUTH_INVALID", "核对用户 id。");
+  const updated = await db.user.update({
+    where: { id: userId },
+    data: { active },
+  });
+  if (!active) await db.session.deleteMany({ where: { userId } });
+  return { ...publicUser(updated), active: updated.active };
+}
+
 export async function login(input: z.input<typeof loginInput>) {
   const parsed = loginInput.safeParse(input);
   if (!parsed.success) {
