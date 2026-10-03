@@ -47,10 +47,15 @@ const reverseAllocationInput = z.object({
   remark: z.string().trim().min(1).max(200),
 });
 
+const voidStatementInput = z.object({
+  remark: z.string().trim().min(1).max(200),
+});
+
 export type StatementInput = z.input<typeof statementInput>;
 export type AllocationInput = z.input<typeof allocationInput>;
 export type PaymentInput = z.input<typeof paymentInput>;
 export type ReverseAllocationInput = z.input<typeof reverseAllocationInput>;
+export type VoidStatementInput = z.input<typeof voidStatementInput>;
 
 const claimInclude = {
   items: { include: { attachments: true } },
@@ -125,9 +130,56 @@ export async function importBankStatement(user: AuthUser, bookId: string, input:
 export async function listBankStatements(bookId: string) {
   if (!bookId.trim()) throw new ClaimError("缺少账套。", "CLAIM_INVALID", "传入 bookId。");
   return db.bankStatement.findMany({
-    where: { bookId },
+    where: { bookId, voidedAt: null },
     orderBy: { createdAt: "desc" },
     take: 200,
+  });
+}
+
+/** 作废从未匹配（或匹配已全部撤销）的流水。 */
+export async function voidBankStatement(user: AuthUser, bookId: string, statementId: string, input: VoidStatementInput) {
+  if (!userHasAnyRole(user, ["cashier", "finance"])) {
+    throw new ClaimError("只有出纳或财务可以作废银行流水。", "CLAIM_FORBIDDEN", "换有权限的账号。");
+  }
+  const parsed = voidStatementInput.safeParse(input);
+  if (!parsed.success) {
+    throw new ClaimError(
+      "作废字段不合要求。",
+      "CLAIM_INVALID",
+      parsed.error.issues.map((issue) => issue.path.join(".") + " " + issue.message).join("；"),
+    );
+  }
+  const data = parsed.data;
+  const statement = await db.bankStatement.findUnique({ where: { id: statementId } });
+  if (!statement || statement.bookId !== bookId) {
+    throw new ClaimError("银行流水不存在或不属于本账套。", "CLAIM_NOT_FOUND", "核对流水。");
+  }
+  if (statement.voidedAt) return statement;
+  if (statement.remainingCents !== statement.cents) {
+    throw new ClaimError(
+      "流水仍有有效匹配，不能作废。",
+      "CLAIM_INVALID",
+      "先撤销全部匹配，或等 remaining 回到原额。",
+    );
+  }
+  const activeAlloc = await db.paymentAllocation.count({
+    where: { statementId: statement.id, reversedAt: null },
+  });
+  if (activeAlloc > 0) {
+    throw new ClaimError(
+      "流水仍有有效匹配，不能作废。",
+      "CLAIM_INVALID",
+      "先撤销全部匹配。",
+    );
+  }
+  return db.bankStatement.update({
+    where: { id: statement.id },
+    data: {
+      voidedAt: new Date(),
+      voidedBy: user.displayName,
+      voidRemark: data.remark,
+      remainingCents: 0,
+    },
   });
 }
 
@@ -183,6 +235,9 @@ export async function allocatePayment(user: AuthUser, claimId: string, input: Al
   const statement = await db.bankStatement.findUnique({ where: { id: data.statementId } });
   if (!statement || statement.bookId !== claim.bookId) {
     throw new ClaimError("银行流水不存在或不属于本账套。", "CLAIM_NOT_FOUND", "先导入流水。");
+  }
+  if (statement.voidedAt) {
+    throw new ClaimError("流水已作废，不能再匹配。", "CLAIM_INVALID", "换一条有效流水。");
   }
   if (data.cents > statement.remainingCents) {
     throw new ClaimError(

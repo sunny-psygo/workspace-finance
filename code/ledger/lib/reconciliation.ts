@@ -14,7 +14,7 @@ export async function bankReconciliation(bookId: string, bankAccountCode = "1002
   const bookBalanceCents = bankRow?.balanceCents ?? 0;
 
   const statements = await db.bankStatement.findMany({
-    where: { bookId, bankAccountCode: code },
+    where: { bookId, bankAccountCode: code, voidedAt: null },
     orderBy: { createdAt: "desc" },
     take: 500,
   });

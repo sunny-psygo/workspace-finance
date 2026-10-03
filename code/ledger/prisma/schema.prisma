@@ -179,7 +179,7 @@ model ClaimEvent {
   @@unique([claimId, mutationId])
 }
 
-// 银行支出流水：可分次匹配到待付款单据
+// 银行支出流水：可分次匹配到待付款单据；从未匹配的可作废
 model BankStatement {
   id              String              @id
   bookId          String
@@ -193,6 +193,9 @@ model BankStatement {
   counterparty    String              @default("")
   remark          String              @default("")
   createdAt       DateTime            @default(now())
+  voidedAt        DateTime?
+  voidedBy        String              @default("")
+  voidRemark      String              @default("")
   allocations     PaymentAllocation[]
 
   @@unique([bookId, reference])

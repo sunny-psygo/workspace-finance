@@ -652,7 +652,27 @@ export default function Page() {
               </form>
               <ul className="mt-3 space-y-1 text-sm text-stone-600">
                 {statements.map((row) => (
-                  <li key={row.id}>{row.reference} · 剩余 {yuan(row.remainingCents)} / {yuan(row.cents)} · {row.id.slice(0, 8)}</li>
+                  <li key={row.id} className="flex flex-wrap items-center gap-2">
+                    <span>{row.reference} · 剩余 {yuan(row.remainingCents)} / {yuan(row.cents)} · {row.id.slice(0, 8)}</span>
+                    {row.remainingCents === row.cents && (roles.includes("cashier") || roles.includes("finance")) ? (
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          const remark = window.prompt("作废原因", "导错流水") || "";
+                          if (!remark.trim()) {
+                            setNotice("作废必须填写原因");
+                            return;
+                          }
+                          await call(`/api/books/${bookId}/statements/${row.id}/void`, { remark });
+                          setNotice(`已作废流水 ${row.reference}`);
+                          await refreshStatements();
+                          await refreshReconFor();
+                        }}
+                      >
+                        作废
+                      </Button>
+                    ) : null}
+                  </li>
                 ))}
               </ul>
             </Card>

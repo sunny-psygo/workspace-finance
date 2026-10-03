@@ -95,6 +95,11 @@ async function main() {
     () => closePeriod(book.id, "2026-12", "财务李", "有未匹配流水"),
     (error: unknown) => error instanceof LedgerError && error.code === "PERIOD_HAS_UNMATCHED_STATEMENTS",
   );
+  await db.bankStatement.update({
+    where: { id: `stmt-${book.id.slice(0, 8)}` },
+    data: { voidedAt: new Date(), voidedBy: "财务李", voidRemark: "导错", remainingCents: 0 },
+  });
+  await closePeriod(book.id, "2026-12", "财务李", "作废后可结");
   await postEntry(book.id, {
     occurredOn: "2026-10-15",
     memo: "未锁月",

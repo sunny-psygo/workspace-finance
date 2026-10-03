@@ -139,6 +139,7 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
       bookId,
       paidOn: { startsWith: `${yearMonth}-` },
       remainingCents: { gt: 0 },
+      voidedAt: null,
     },
     select: { id: true, reference: true, remainingCents: true },
     take: 20,
