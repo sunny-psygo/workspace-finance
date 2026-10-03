@@ -70,6 +70,8 @@ export default function Page() {
   const [rows, setRows] = useState<BalanceRow[]>([]);
   const [claim, setClaim] = useState<Claim | null>(null);
   const [claims, setClaims] = useState<Claim[]>([]);
+  const [allClaims, setAllClaims] = useState<Claim[]>([]);
+  const [claimFilter, setClaimFilter] = useState("all");
   const [books, setBooks] = useState<Array<{ id: string; name: string }>>([]);
   const [statements, setStatements] = useState<Statement[]>([]);
   const [users, setUsers] = useState<Array<User & { active: boolean }>>([]);
@@ -123,10 +125,13 @@ export default function Page() {
     setBooks(payload.books);
   }
 
-  async function refreshClaims(id = bookId) {
+  async function refreshClaims(id = bookId, status = claimFilter) {
     if (!id) return;
-    const payload = await call<{ claims: Claim[] }>(`/api/claims?bookId=${encodeURIComponent(id)}&queue=1`);
-    setClaims(payload.claims);
+    const queuePayload = await call<{ claims: Claim[] }>(`/api/claims?bookId=${encodeURIComponent(id)}&queue=1`);
+    setClaims(queuePayload.claims);
+    const statusQuery = status && status !== "all" ? `&status=${encodeURIComponent(status)}` : "";
+    const allPayload = await call<{ claims: Claim[] }>(`/api/claims?bookId=${encodeURIComponent(id)}${statusQuery}`);
+    setAllClaims(allPayload.claims);
   }
 
   async function selectBook(id: string) {
@@ -388,7 +393,7 @@ export default function Page() {
             </Card>
           </section>
 
-          <section className="mt-6">
+          <section className="mt-6 grid gap-4 md:grid-cols-2">
             <Card>
               <CardTitle>待办单据（按当前角色）</CardTitle>
               <ul className="mt-3 space-y-2 text-sm">
@@ -405,6 +410,46 @@ export default function Page() {
                       }}
                     >
                       {row.status} · {yuan(row.paidCents || 0)}/{yuan(row.totalCents)} · {row.purpose} · {row.id.slice(0, 8)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+            <Card>
+              <CardTitle>全部单据</CardTitle>
+              <select
+                className="mt-3 h-10 w-full rounded-md border border-stone-300 px-3 text-sm"
+                value={claimFilter}
+                disabled={!bookId}
+                onChange={async (event) => {
+                  const value = event.target.value;
+                  setClaimFilter(value);
+                  await refreshClaims(bookId, value);
+                }}
+              >
+                <option value="all">全部状态</option>
+                <option value="draft">draft</option>
+                <option value="financeReview">financeReview</option>
+                <option value="gmReview">gmReview</option>
+                <option value="paymentVoucher">paymentVoucher</option>
+                <option value="completed">completed</option>
+                <option value="rejected">rejected</option>
+                <option value="voided">voided</option>
+              </select>
+              <ul className="mt-3 max-h-48 space-y-2 overflow-auto text-sm">
+                {allClaims.length === 0 ? <li className="text-stone-500">暂无单据</li> : null}
+                {allClaims.map((row) => (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      className={`text-left underline ${claim?.id === row.id ? "text-stone-900" : "text-sky-700"}`}
+                      onClick={async () => {
+                        const payload = await call<{ claim: Claim }>(`/api/claims/${row.id}`);
+                        setClaim(payload.claim);
+                        setNotice(`已选单据 ${payload.claim.status}`);
+                      }}
+                    >
+                      {row.status} · {row.applicant || ""} · {yuan(row.totalCents)} · {row.purpose}
                     </button>
                   </li>
                 ))}
