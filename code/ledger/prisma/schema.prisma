@@ -199,22 +199,26 @@ model BankStatement {
   @@index([bookId, remainingCents])
 }
 
-// 流水与报销单的一次匹配：借应付、贷银行
+// 流水与报销单的一次匹配：借应付、贷银行；撤销后写红冲并标 reversedAt
 model PaymentAllocation {
-  id           String        @id
-  claimId      String
-  claim        Claim         @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  statementId  String
-  statement    BankStatement @relation(fields: [statementId], references: [id])
-  cents        Int
-  entryId      String
-  mutationId   String
-  voucherNo    String        @default("")
-  fileName     String        @default("")
-  storagePath  String        @default("")
-  remark       String        @default("")
-  uploadedBy   String
-  createdAt    DateTime      @default(now())
+  id                 String        @id
+  claimId            String
+  claim              Claim         @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  statementId        String
+  statement          BankStatement @relation(fields: [statementId], references: [id])
+  cents              Int
+  entryId            String
+  mutationId         String
+  voucherNo          String        @default("")
+  fileName           String        @default("")
+  storagePath        String        @default("")
+  remark             String        @default("")
+  uploadedBy         String
+  createdAt          DateTime      @default(now())
+  reversedAt         DateTime?
+  reverseEntryId     String?
+  reverseMutationId  String?
+  reverseRemark      String        @default("")
 
   @@unique([claimId, mutationId])
   @@index([statementId])

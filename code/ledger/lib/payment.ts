@@ -41,9 +41,16 @@ const paymentInput = z.object({
   cents: z.number().int().positive().optional(),
 });
 
+const reverseAllocationInput = z.object({
+  expectedRevision: z.number().int().nonnegative(),
+  mutationId: z.string().trim().min(1).max(120),
+  remark: z.string().trim().min(1).max(200),
+});
+
 export type StatementInput = z.input<typeof statementInput>;
 export type AllocationInput = z.input<typeof allocationInput>;
 export type PaymentInput = z.input<typeof paymentInput>;
+export type ReverseAllocationInput = z.input<typeof reverseAllocationInput>;
 
 const claimInclude = {
   items: { include: { attachments: true } },
@@ -260,6 +267,146 @@ export async function allocatePayment(user: AuthUser, claimId: string, input: Al
     const updated = await tx.claim.findUnique({ where: { id: claim.id }, include: claimInclude });
     if (!updated) throw new ClaimError("单据不存在。", "CLAIM_NOT_FOUND", "核对单据号。");
     return updated;
+  });
+}
+
+/** 撤销一笔匹配：红冲核销分录，恢复流水剩余与单据未付。 */
+export async function reverseAllocation(
+  user: AuthUser,
+  claimId: string,
+  allocationId: string,
+  input: ReverseAllocationInput,
+) {
+  if (!userHasRole(user, "cashier")) {
+    throw new ClaimError("只有出纳可以撤销付款匹配。", "CLAIM_FORBIDDEN", "换出纳账号登录。");
+  }
+  const parsed = reverseAllocationInput.safeParse(input);
+  if (!parsed.success) {
+    throw new ClaimError(
+      "撤销字段不合要求。",
+      "CLAIM_INVALID",
+      parsed.error.issues.map((issue) => issue.path.join(".") + " " + issue.message).join("；"),
+    );
+  }
+  const data = parsed.data;
+
+  const existingEvent = await db.claimEvent.findUnique({
+    where: { claimId_mutationId: { claimId, mutationId: data.mutationId } },
+  });
+  if (existingEvent) {
+    return db.claim.findUniqueOrThrow({ where: { id: claimId }, include: claimInclude });
+  }
+
+  const claim = await db.claim.findUnique({ where: { id: claimId }, include: claimInclude });
+  if (!claim) throw new ClaimError("单据不存在。", "CLAIM_NOT_FOUND", "核对单据号。");
+  if (claim.status !== "paymentVoucher" && claim.status !== "completed") {
+    throw new ClaimError(
+      `状态 ${claim.status} 不能撤销付款匹配。`,
+      "CLAIM_STATUS_CHANGED",
+      "只处理待付款或已完成单据。",
+    );
+  }
+  if (claim.revision !== data.expectedRevision) {
+    throw new ClaimError(
+      `版本冲突：期望 ${data.expectedRevision}，实际 ${claim.revision}。`,
+      "CLAIM_REVISION_CONFLICT",
+      "用最新 revision 重试。",
+    );
+  }
+
+  const allocation = await db.paymentAllocation.findUnique({ where: { id: allocationId } });
+  if (!allocation || allocation.claimId !== claimId) {
+    throw new ClaimError("匹配记录不存在。", "CLAIM_NOT_FOUND", "核对匹配 id。");
+  }
+  if (allocation.reversedAt) {
+    return claim;
+  }
+
+  const statement = await db.bankStatement.findUnique({ where: { id: allocation.statementId } });
+  if (!statement || statement.bookId !== claim.bookId) {
+    throw new ClaimError("银行流水不存在或不属于本账套。", "CLAIM_NOT_FOUND", "核对流水。");
+  }
+
+  const nextPaid = claim.paidCents - allocation.cents;
+  if (nextPaid < 0) {
+    throw new ClaimError("已付金额不足以撤销该匹配。", "CLAIM_INVALID", "数据不一致，联系管理员。");
+  }
+  const toStatus = nextPaid > 0 && nextPaid >= claim.totalCents ? "completed" : "paymentVoucher";
+  const fromStatus = claim.status;
+
+  return db.$transaction(async (tx) => {
+    const reverseEntry = await postEntry(
+      claim.bookId,
+      {
+        occurredOn: statement.paidOn,
+        memo: `撤销核销 ${claim.purpose}`.slice(0, 200),
+        reference: `pay-rev:${allocation.id}`,
+        postings: [
+          { accountCode: statement.bankAccountCode, side: "debit", cents: allocation.cents },
+          { accountCode: claim.payableAccountCode, side: "credit", cents: allocation.cents },
+        ],
+      },
+      tx,
+    );
+
+    const allocationTouched = await tx.paymentAllocation.updateMany({
+      where: { id: allocation.id, reversedAt: null },
+      data: {
+        reversedAt: new Date(),
+        reverseEntryId: reverseEntry.id,
+        reverseMutationId: data.mutationId,
+        reverseRemark: data.remark,
+      },
+    });
+    if (allocationTouched.count !== 1) {
+      throw new ClaimError("匹配已被撤销。", "CLAIM_REVISION_CONFLICT", "刷新后重试。");
+    }
+
+    await tx.bankStatement.update({
+      where: { id: statement.id },
+      data: { remainingCents: { increment: allocation.cents } },
+    });
+
+    const stillActive = await tx.paymentAllocation.findMany({
+      where: { claimId: claim.id, reversedAt: null, id: { not: allocation.id } },
+      orderBy: { createdAt: "desc" },
+    });
+    const paymentEntryId = stillActive[0]?.entryId ?? null;
+
+    const claimTouched = await tx.claim.updateMany({
+      where: {
+        id: claim.id,
+        revision: claim.revision,
+        status: { in: ["paymentVoucher", "completed"] },
+      },
+      data: {
+        paidCents: nextPaid,
+        status: toStatus,
+        revision: claim.revision + 1,
+        lastMutationId: data.mutationId,
+        paymentEntryId,
+        remark: data.remark,
+      },
+    });
+    if (claimTouched.count !== 1) {
+      throw new ClaimError("单据状态已变，撤销未写入。", "CLAIM_REVISION_CONFLICT", "刷新后重试。");
+    }
+
+    await tx.claimEvent.create({
+      data: {
+        id: randomUUID(),
+        claimId: claim.id,
+        action: "reverseAllocation",
+        fromStatus,
+        toStatus,
+        actor: user.displayName,
+        role: "cashier",
+        mutationId: data.mutationId,
+        remark: data.remark,
+      },
+    });
+
+    return tx.claim.findUniqueOrThrow({ where: { id: claim.id }, include: claimInclude });
   });
 }
 

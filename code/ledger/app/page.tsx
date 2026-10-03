@@ -36,7 +36,12 @@ type Claim = {
     attachments?: Array<{ id: string; fileName: string }>;
   }>;
   // attachments links use /api/attachments/:id
-  allocations?: Array<{ id: string; cents: number; voucherNo: string }>;
+  allocations?: Array<{
+    id: string;
+    cents: number;
+    voucherNo: string;
+    reversedAt?: string | null;
+  }>;
 };
 
 type Statement = {
@@ -250,6 +255,28 @@ export default function Page() {
     });
     setClaim(payload.claim);
     setNotice(`已核销 ${yuan(payload.claim.paidCents || 0)} / ${yuan(payload.claim.totalCents)} 元`);
+    await refreshBalance();
+    await refreshStatements();
+    await refreshClaims();
+  }
+
+  async function reverseClaimAllocation(allocationId: string) {
+    if (!claim) return;
+    const remark = window.prompt("撤销原因", "配错流水") || "";
+    if (!remark.trim()) {
+      setNotice("撤销必须填写原因");
+      return;
+    }
+    const payload = await call<{ claim: Claim }>(
+      `/api/claims/${claim.id}/allocations/${allocationId}/reverse`,
+      {
+        expectedRevision: claim.revision,
+        mutationId: `rev-${claim.revision}-${Date.now()}`,
+        remark,
+      },
+    );
+    setClaim(payload.claim);
+    setNotice(`已撤销匹配，当前已付 ${yuan(payload.claim.paidCents || 0)} / ${yuan(payload.claim.totalCents)} 元`);
     await refreshBalance();
     await refreshStatements();
     await refreshClaims();
@@ -539,6 +566,21 @@ export default function Page() {
                 <Input className="mt-2" name="fileText" placeholder="回单文本（演示）" defaultValue="payment-proof" disabled={!claim} />
                 <Button className="mt-3" disabled={!claim || !roles.includes("cashier") || claim.status !== "paymentVoucher"}>匹配并核销</Button>
               </form>
+              {claim?.allocations?.length ? (
+                <ul className="mt-3 space-y-1 text-sm text-stone-600">
+                  {claim.allocations.map((row) => (
+                    <li key={row.id} className="flex flex-wrap items-center gap-2">
+                      <span>
+                        {yuan(row.cents)} · {row.voucherNo || row.id.slice(0, 8)}
+                        {row.reversedAt ? " · 已撤销" : ""}
+                      </span>
+                      {!row.reversedAt && roles.includes("cashier") && (claim.status === "paymentVoucher" || claim.status === "completed") ? (
+                        <Button type="button" onClick={() => reverseClaimAllocation(row.id)}>撤销</Button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </Card>
           </section>
 

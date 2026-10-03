@@ -3,7 +3,13 @@ import { uploadClaimItemAttachment } from "./attachment";
 import { createUser, login } from "./auth";
 import { applyClaimAction, ClaimError, createDraft } from "./claim";
 import { openBook, trialBalance } from "./ledger";
-import { allocatePayment, completePayment, importBankStatement } from "./payment";
+import {
+  allocatePayment,
+  completePayment,
+  importBankStatement,
+  listBankStatements,
+  reverseAllocation,
+} from "./payment";
 
 async function user(username: string, displayName: string, roles: Array<"employee" | "finance" | "gm" | "cashier">) {
   try {
@@ -175,6 +181,55 @@ async function main() {
   assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 0);
   assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, -12800);
 
+  // 撤销最后一笔匹配：付清单退回待付款，银行与应付回落
+  const lastAlloc = done.allocations[done.allocations.length - 1]!;
+  const reversed = await reverseAllocation(cashier, draft.id, lastAlloc.id, {
+    expectedRevision: done.revision,
+    mutationId: "m-rev-1",
+    remark: "配错流水撤销",
+  });
+  assert.equal(reversed.status, "paymentVoucher");
+  assert.equal(reversed.paidCents, 6000);
+  rows = await trialBalance(book.id);
+  assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 6800);
+  assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, -6000);
+
+  const statements = await listBankStatements(book.id);
+  const restored = statements.find((row) => row.id === stmt.id);
+  assert.equal(restored?.remainingCents, 6800);
+
+  // 幂等
+  const revAgain = await reverseAllocation(cashier, draft.id, lastAlloc.id, {
+    expectedRevision: reversed.revision,
+    mutationId: "m-rev-1",
+    remark: "配错流水撤销",
+  });
+  assert.equal(revAgain.revision, reversed.revision);
+
+  // 再撤第一笔，付清额归零后可作废
+  const firstAlloc = reversed.allocations.find((row) => !row.reversedAt)!;
+  const zeroPaid = await reverseAllocation(cashier, draft.id, firstAlloc.id, {
+    expectedRevision: reversed.revision,
+    mutationId: "m-rev-2",
+    remark: "全部撤销",
+  });
+  assert.equal(zeroPaid.paidCents, 0);
+  assert.equal(zeroPaid.status, "paymentVoucher");
+  rows = await trialBalance(book.id);
+  assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 12800);
+  assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, 0);
+
+  const voidAfterPay = await applyClaimAction(gm, draft.id, {
+    action: "void",
+    expectedRevision: zeroPaid.revision,
+    mutationId: "m-void-after-rev",
+    remark: "匹配撤销后作废",
+  });
+  assert.equal(voidAfterPay.status, "voided");
+  rows = await trialBalance(book.id);
+  assert.equal(rows.find((row) => row.code === "5602")?.balanceCents, 0);
+  assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 0);
+
   // 兼容旧全额付款接口
   const draft2 = await createDraft(employee, {
     bookId: book.id,
@@ -206,6 +261,10 @@ async function main() {
   });
   assert.equal(full.status, "completed");
   assert.equal(full.paidCents, 5000);
+  rows = await trialBalance(book.id);
+  assert.equal(rows.find((row) => row.code === "5602")?.balanceCents, 5000);
+  assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 0);
+  assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, -5000);
 
   console.log("claim+bank-match ok");
 }
