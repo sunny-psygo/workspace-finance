@@ -25,6 +25,7 @@ type Claim = {
   status: string;
   revision: number;
   purpose: string;
+  applicant?: string;
   totalCents: number;
   paidCents?: number;
   entryId?: string | null;
@@ -67,13 +68,24 @@ export default function Page() {
   const [bookId, setBookId] = useState("");
   const [rows, setRows] = useState<BalanceRow[]>([]);
   const [claim, setClaim] = useState<Claim | null>(null);
+  const [claims, setClaims] = useState<Claim[]>([]);
+  const [books, setBooks] = useState<Array<{ id: string; name: string }>>([]);
   const [statements, setStatements] = useState<Statement[]>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
   useEffect(() => {
     call<{ user: User }>("/api/auth/me")
-      .then((payload) => setUser(payload.user))
+      .then(async (payload) => {
+        setUser(payload.user);
+        const booksPayload = await call<{ books: Array<{ id: string; name: string }> }>("/api/books");
+        setBooks(booksPayload.books);
+        if (booksPayload.books[0] && !bookId) {
+          await selectBook(booksPayload.books[0].id);
+        }
+      })
       .catch(() => setUser(null));
+    // 仅首屏恢复会话
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function doLogin(event: FormEvent<HTMLFormElement>) {
@@ -85,6 +97,7 @@ export default function Page() {
     });
     setUser(payload.user);
     setNotice(`已登录：${payload.user.displayName}（${payload.user.roles.join(",")}）`);
+    await refreshBooks();
   }
 
   async function doLogout() {
@@ -99,6 +112,38 @@ export default function Page() {
     const payload = await call<{ book: { id: string } }>("/api/books", { name: form.get("name") });
     setBookId(payload.book.id);
     setNotice(`账套已建立：${payload.book.id}`);
+    await refreshBooks();
+    await refreshClaims(payload.book.id);
+  }
+
+  async function refreshBooks() {
+    const payload = await call<{ books: Array<{ id: string; name: string }> }>("/api/books");
+    setBooks(payload.books);
+  }
+
+  async function refreshClaims(id = bookId) {
+    if (!id) return;
+    const payload = await call<{ claims: Claim[] }>(`/api/claims?bookId=${encodeURIComponent(id)}&queue=1`);
+    setClaims(payload.claims);
+  }
+
+  async function selectBook(id: string) {
+    setBookId(id);
+    setClaim(null);
+    setNotice(`当前账套：${id}`);
+    await refreshBalanceFor(id);
+    await refreshClaims(id);
+    await refreshStatementsFor(id);
+  }
+
+  async function refreshBalanceFor(id: string) {
+    const payload = await call<{ rows: BalanceRow[] }>(`/api/books/${id}/trial-balance`);
+    setRows(payload.rows);
+  }
+
+  async function refreshStatementsFor(id: string) {
+    const payload = await call<{ statements: Statement[] }>(`/api/books/${id}/statements`);
+    setStatements(payload.statements);
   }
 
   async function addAccount(event: FormEvent<HTMLFormElement>) {
@@ -147,6 +192,7 @@ export default function Page() {
     }
     setClaim(claim);
     setNotice(`草稿已建并附票据：${claim.id}`);
+    await refreshClaims();
   }
 
   async function runAction(action: string, remark?: string) {
@@ -160,6 +206,7 @@ export default function Page() {
     setClaim(payload.claim);
     setNotice(`单据 ${payload.claim.status} · ${yuan(payload.claim.totalCents)} 元`);
     await refreshBalance();
+    await refreshClaims();
   }
 
   async function importStatement(event: FormEvent<HTMLFormElement>) {
@@ -198,18 +245,17 @@ export default function Page() {
     setNotice(`已核销 ${yuan(payload.claim.paidCents || 0)} / ${yuan(payload.claim.totalCents)} 元`);
     await refreshBalance();
     await refreshStatements();
+    await refreshClaims();
   }
 
   async function refreshBalance() {
     if (!bookId) return;
-    const payload = await call<{ rows: BalanceRow[] }>(`/api/books/${bookId}/trial-balance`);
-    setRows(payload.rows);
+    await refreshBalanceFor(bookId);
   }
 
   async function refreshStatements() {
     if (!bookId) return;
-    const payload = await call<{ statements: Statement[] }>(`/api/books/${bookId}/statements`);
-    setStatements(payload.statements);
+    await refreshStatementsFor(bookId);
   }
 
   async function closeMonth(event: FormEvent<HTMLFormElement>) {
@@ -282,12 +328,46 @@ export default function Page() {
             <Card>
               <CardTitle>当前账套 / 结账</CardTitle>
               <p className="mt-3 break-all text-sm text-stone-600">{bookId || "尚未开账"}</p>
+              <ul className="mt-2 max-h-28 space-y-1 overflow-auto text-sm">
+                {books.map((book) => (
+                  <li key={book.id}>
+                    <button type="button" className="text-left text-sky-700 underline" onClick={() => selectBook(book.id)}>
+                      {book.name} · {book.id.slice(0, 8)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
               <Button className="mt-3" disabled={!bookId} onClick={refreshBalance}>刷新试算</Button>
+              <Button className="mt-3 ml-2" disabled={!bookId} onClick={() => refreshClaims()}>刷新待办</Button>
               <form className="mt-4" onSubmit={closeMonth}>
                 <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-09" required disabled={!bookId} />
                 <Input className="mt-2" name="remark" placeholder="结账说明" defaultValue="月结" disabled={!bookId} />
                 <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>锁定期间</Button>
               </form>
+            </Card>
+          </section>
+
+          <section className="mt-6">
+            <Card>
+              <CardTitle>待办单据（按当前角色）</CardTitle>
+              <ul className="mt-3 space-y-2 text-sm">
+                {claims.length === 0 ? <li className="text-stone-500">暂无待办</li> : null}
+                {claims.map((row) => (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      className={`text-left underline ${claim?.id === row.id ? "text-stone-900" : "text-sky-700"}`}
+                      onClick={async () => {
+                        const payload = await call<{ claim: Claim }>(`/api/claims/${row.id}`);
+                        setClaim(payload.claim);
+                        setNotice(`已选单据 ${payload.claim.status}`);
+                      }}
+                    >
+                      {row.status} · {yuan(row.paidCents || 0)}/{yuan(row.totalCents)} · {row.purpose} · {row.id.slice(0, 8)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </Card>
           </section>
 

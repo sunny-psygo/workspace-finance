@@ -200,10 +200,23 @@ export async function createDraft(user: AuthUser, input: DraftInput) {
   });
 }
 
-export async function listClaims(bookId: string) {
+export async function listClaims(bookId: string, options?: { status?: string; queueFor?: AuthUser }) {
   if (!bookId.trim()) throw new ClaimError("缺少账套。", "CLAIM_INVALID", "传入 bookId。");
+  const statuses: string[] = [];
+  if (options?.status) {
+    statuses.push(options.status);
+  } else if (options?.queueFor) {
+    const user = options.queueFor;
+    if (userHasRole(user, "finance")) statuses.push("financeReview");
+    if (userHasRole(user, "gm")) statuses.push("gmReview");
+    if (userHasRole(user, "cashier")) statuses.push("paymentVoucher");
+    if (userHasRole(user, "employee")) statuses.push("draft", "rejected");
+  }
   return db.claim.findMany({
-    where: { bookId },
+    where: {
+      bookId,
+      ...(statuses.length ? { status: { in: [...new Set(statuses)] } } : {}),
+    },
     include: claimInclude,
     orderBy: { createdAt: "desc" },
     take: 100,

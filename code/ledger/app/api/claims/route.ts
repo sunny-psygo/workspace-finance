@@ -5,9 +5,15 @@ import { fail } from "@/lib/http";
 
 export async function GET(request: Request) {
   try {
-    await requireUser(request);
-    const bookId = new URL(request.url).searchParams.get("bookId") ?? "";
-    const claims = await listClaims(bookId);
+    const user = await requireUser(request);
+    const url = new URL(request.url);
+    const bookId = url.searchParams.get("bookId") ?? "";
+    const status = url.searchParams.get("status") ?? undefined;
+    const queue = url.searchParams.get("queue") === "1";
+    const claims = await listClaims(bookId, {
+      status,
+      queueFor: queue ? user : undefined,
+    });
     return NextResponse.json({ ok: true, claims });
   } catch (error) {
     return fail(error);
