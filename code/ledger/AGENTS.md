@@ -13,6 +13,7 @@
 | 登录/改密/GM 管账号 | `design/auth.md` |
 | 报销审批入应付 | `design/claims.md` |
 | 明细附件 | `design/attachments.md` |
+| 附件存储抽象 | `design/blob-store.md` |
 | 发票号查重 | `design/invoice-dedup.md` |
 | 银行流水分次付款 | `design/bank-match.md` |
 | 付款匹配撤销红冲 | `design/allocation-reverse.md` |

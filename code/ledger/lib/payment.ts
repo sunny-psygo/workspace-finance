@@ -1,9 +1,8 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { AuthUser, userHasAnyRole, userHasRole } from "./auth";
+import { getBlobStore } from "./blob-store";
 import { ClaimError } from "./claim";
 import { db } from "./db";
 import { postEntry } from "./ledger";
@@ -63,10 +62,6 @@ const claimInclude = {
   allocations: { orderBy: { createdAt: "asc" as const } },
 };
 
-function safeFileName(name: string) {
-  return name.replace(/[^a-zA-Z0-9._\-\u4e00-\u9fff]/g, "_").slice(0, 120);
-}
-
 async function maybeStoreProof(claimId: string, fileName: string | undefined, fileBase64: string | undefined) {
   if (!fileName || !fileBase64) return { fileName: "", storagePath: "" };
   let fileBytes: Buffer;
@@ -79,11 +74,8 @@ async function maybeStoreProof(claimId: string, fileName: string | undefined, fi
   if (fileBytes.length > 5 * 1024 * 1024) {
     throw new ClaimError("回单超过 5MB。", "CLAIM_INVALID", "压缩后再传。");
   }
-  const dir = path.join(process.cwd(), "data", "payment-vouchers", claimId);
-  await mkdir(dir, { recursive: true });
-  const absolute = path.join(dir, `${Date.now()}-${safeFileName(fileName)}`);
-  await writeFile(absolute, fileBytes);
-  return { fileName, storagePath: path.relative(process.cwd(), absolute) };
+  const stored = await getBlobStore().put(`payment-vouchers/${claimId}`, fileName, fileBytes);
+  return { fileName, storagePath: stored.storageKey };
 }
 
 export async function importBankStatement(user: AuthUser, bookId: string, input: StatementInput) {

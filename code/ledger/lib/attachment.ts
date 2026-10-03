@@ -1,9 +1,7 @@
-import { access } from "node:fs/promises";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { AuthUser, userHasRole } from "./auth";
+import { getBlobStore } from "./blob-store";
 import { ClaimError } from "./claim";
 import { db } from "./db";
 
@@ -15,17 +13,8 @@ const uploadInput = z.object({
 
 export type UploadAttachmentInput = z.input<typeof uploadInput>;
 
-function safeFileName(name: string) {
-  return name.replace(/[^a-zA-Z0-9._\-\u4e00-\u9fff]/g, "_").slice(0, 120);
-}
-
 export async function fileExists(storagePath: string) {
-  try {
-    await access(path.isAbsolute(storagePath) ? storagePath : path.join(process.cwd(), storagePath));
-    return true;
-  } catch {
-    return false;
-  }
+  return getBlobStore().exists(storagePath);
 }
 
 export async function assertClaimItemsHaveAttachments(
@@ -96,12 +85,11 @@ export async function uploadClaimItemAttachment(
     throw new ClaimError("附件超过 5MB。", "CLAIM_INVALID", "压缩后再传。");
   }
 
-  const dir = path.join(process.cwd(), "data", "claim-attachments", claim.id, item.id);
-  await mkdir(dir, { recursive: true });
-  const storedName = `${Date.now()}-${safeFileName(data.fileName)}`;
-  const absolute = path.join(dir, storedName);
-  await writeFile(absolute, fileBytes);
-  const storagePath = path.relative(process.cwd(), absolute);
+  const stored = await getBlobStore().put(
+    `claim-attachments/${claim.id}/${item.id}`,
+    data.fileName,
+    fileBytes,
+  );
 
   return db.claimAttachment.create({
     data: {
@@ -109,8 +97,8 @@ export async function uploadClaimItemAttachment(
       claimItemId: item.id,
       fileName: data.fileName,
       contentType: data.contentType || "application/octet-stream",
-      byteSize: fileBytes.length,
-      storagePath,
+      byteSize: stored.byteSize,
+      storagePath: stored.storageKey,
       uploadedBy: user.displayName,
     },
   });
