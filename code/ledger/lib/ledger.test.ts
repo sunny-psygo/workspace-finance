@@ -1,5 +1,16 @@
 import assert from "node:assert/strict";
-import { addAccount, closePeriod, LedgerError, openBook, postEntry, reopenPeriod, trialBalance } from "./ledger";
+import { randomUUID } from "node:crypto";
+import {
+  addAccount,
+  closePeriod,
+  closeYear,
+  LedgerError,
+  openBook,
+  postEntry,
+  reopenPeriod,
+  reopenYear,
+  trialBalance,
+} from "./ledger";
 
 async function main() {
   const book = await openBook(`测试账-${Date.now().toString(36)}`);
@@ -7,7 +18,7 @@ async function main() {
   const seeded = await db.account.findMany({ where: { bookId: book.id }, orderBy: { code: "asc" } });
   assert.deepEqual(
     seeded.map((row) => row.code),
-    ["1002", "2241", "4103", "5602"],
+    ["1002", "2241", "4103", "4104", "5602"],
   );
   await addAccount(book.id, { code: "1001", name: "库存现金", kind: "asset" });
   await addAccount(book.id, { code: "5001", name: "管理费用手工", kind: "expense" });
@@ -129,6 +140,32 @@ async function main() {
   const reopenedRows = await trialBalance(book.id);
   assert.equal(reopenedRows.find((row) => row.code === "5001")?.balanceCents, 12950);
   assert.equal(reopenedRows.find((row) => row.code === "4103")?.balanceCents, 0);
+
+  // 再结十月，并种满全年锁后做年末结转
+  await closePeriod(book.id, "2026-10", "财务李", "再结十月");
+  for (let month = 1; month <= 12; month += 1) {
+    const yearMonth = `2026-${String(month).padStart(2, "0")}`;
+    await db.accountingPeriod.upsert({
+      where: { bookId_yearMonth: { bookId: book.id, yearMonth } },
+      create: {
+        id: randomUUID(),
+        bookId: book.id,
+        yearMonth,
+        lockedBy: "财务李",
+        remark: "种锁",
+      },
+      update: {},
+    });
+  }
+  const yearClose = await closeYear(book.id, 2026, "财务李", "年结");
+  assert.ok(yearClose.entryId);
+  const yearRows = await trialBalance(book.id);
+  assert.equal(yearRows.find((row) => row.code === "4103")?.balanceCents, 0);
+  assert.equal(yearRows.find((row) => row.code === "4104")?.balanceCents, -12900);
+  await reopenYear(book.id, 2026, "改年结");
+  const yearReopened = await trialBalance(book.id);
+  assert.equal(yearReopened.find((row) => row.code === "4103")?.balanceCents, -12900);
+  assert.equal(yearReopened.find((row) => row.code === "4104")?.balanceCents, 0);
 
   console.log("ledger ok");
 }

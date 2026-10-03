@@ -20,6 +20,7 @@
 | 作废未匹配流水 | `design/statement-void.md` |
 | 期间锁定与未完单检查 | `design/period-close.md` |
 | 结账结转损益 | `design/pl-close.md` |
+| 年末结转未分配利润 | `design/year-end-close.md` |
 
 ## 本地
 

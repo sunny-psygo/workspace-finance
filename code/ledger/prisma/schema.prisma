@@ -43,6 +43,7 @@ model Book {
   claims     Claim[]
   statements BankStatement[]
   periods    AccountingPeriod[]
+  yearCloses YearClose[]
 }
 
 model AccountingPeriod {
@@ -56,6 +57,23 @@ model AccountingPeriod {
   remark    String   @default("")
 
   @@unique([bookId, yearMonth])
+}
+
+// 年末把本年利润结到未分配利润；entryId 空表示当年利润本就为 0
+model YearClose {
+  id        String   @id
+  bookId    String
+  book      Book     @relation(fields: [bookId], references: [id])
+  year      Int
+  entryId   String?
+  closedBy  String
+  remark    String   @default("")
+  closedAt  DateTime @default(now())
+  reversedAt DateTime?
+  reverseEntryId String?
+  reverseRemark String @default("")
+
+  @@unique([bookId, year])
 }
 
 model Account {

@@ -355,6 +355,30 @@ export default function Page() {
     await refreshBalance();
   }
 
+  async function closeYearEnd(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    await call(`/api/books/${bookId}/year-end/close`, {
+      year: Number(form.get("year")),
+      remark: form.get("remark") || "年末结转",
+    });
+    setNotice(`已年末结转 ${form.get("year")}`);
+    await refreshBalance();
+  }
+
+  async function reopenYearEnd(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    await call(`/api/books/${bookId}/year-end/reopen`, {
+      year: Number(form.get("year")),
+      remark: form.get("remark") || "撤销年结",
+    });
+    setNotice(`已撤销年末结转 ${form.get("year")}`);
+    await refreshBalance();
+  }
+
   async function refreshUsers() {
     const payload = await call<{ users: Array<User & { active: boolean }> }>("/api/auth/users");
     setUsers(payload.users);
@@ -473,6 +497,16 @@ export default function Page() {
                 <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-09" required disabled={!bookId} />
                 <Input className="mt-2" name="remark" placeholder="反结账原因" defaultValue="补凭证" required disabled={!bookId} />
                 <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>反结账</Button>
+              </form>
+              <form className="mt-4" onSubmit={closeYearEnd}>
+                <Input name="year" placeholder="年份" defaultValue="2026" required disabled={!bookId} />
+                <Input className="mt-2" name="remark" placeholder="年末结转说明" defaultValue="年结" disabled={!bookId} />
+                <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>年末结转</Button>
+              </form>
+              <form className="mt-3" onSubmit={reopenYearEnd}>
+                <Input name="year" placeholder="年份" defaultValue="2026" required disabled={!bookId} />
+                <Input className="mt-2" name="remark" placeholder="撤销年结原因" defaultValue="改年结" required disabled={!bookId} />
+                <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>撤销年结</Button>
               </form>
             </Card>
           </section>
