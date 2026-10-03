@@ -284,6 +284,23 @@ export default function Page() {
           <div className="text-right text-sm">
             <p>{user.displayName}</p>
             <p className="text-stone-500">{user.roles.join(", ")}</p>
+            <form
+              className="mt-2 space-y-1"
+              onSubmit={async (event) => {
+                event.preventDefault();
+                const form = new FormData(event.currentTarget);
+                await call("/api/auth/change-password", {
+                  currentPassword: form.get("currentPassword"),
+                  newPassword: form.get("newPassword"),
+                });
+                setUser(null);
+                setNotice("密码已更新，请重新登录。");
+              }}
+            >
+              <Input name="currentPassword" type="password" placeholder="当前密码" required />
+              <Input name="newPassword" type="password" placeholder="新密码至少8位" required />
+              <Button type="submit">改密</Button>
+            </form>
             <Button className="mt-2" onClick={doLogout}>退出</Button>
           </div>
         ) : null}
@@ -383,7 +400,7 @@ export default function Page() {
                 <Input className="mt-2" name="bankName" placeholder="开户行" defaultValue="测试银行" required disabled={!bookId} />
                 <Input className="mt-2" name="purpose" placeholder="事由" defaultValue="办公用品" required disabled={!bookId} />
                 <Input className="mt-2" name="itemMemo" placeholder="明细说明" defaultValue="打印纸" required disabled={!bookId} />
-                <Input className="mt-2" name="invoiceNo" placeholder="发票号（可空）" defaultValue="INV-DEMO-001" disabled={!bookId} />
+                <Input className="mt-2" name="invoiceNo" placeholder="发票号（可空）" defaultValue={`INV-${Date.now().toString().slice(-8)}`} disabled={!bookId} />
                 <Input className="mt-2" name="occurredOn" type="date" required disabled={!bookId} />
                 <Input className="mt-2" name="amount" placeholder="金额（元）" defaultValue="128" required disabled={!bookId} />
                 <Input className="mt-2" name="expenseAccountCode" defaultValue="5602" disabled={!bookId} />

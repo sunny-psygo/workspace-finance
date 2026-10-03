@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { AuthError, createUser, login, logout, userFromToken, userHasRole } from "./auth";
+import { AuthError, changePassword, createUser, login, logout, userFromToken, userHasRole } from "./auth";
 
 async function main() {
   const suffix = Date.now().toString(36);
@@ -23,8 +23,13 @@ async function main() {
   const me = await userFromToken(session.token);
   assert.equal(me?.id, user.id);
 
-  await logout(session.token);
-  const gone = await userFromToken(session.token);
+  await changePassword(user.id, { currentPassword: "Passw0rd!", newPassword: "Passw0rd!2" });
+  assert.equal(await userFromToken(session.token), null);
+  const again = await login({ username: user.username, password: "Passw0rd!2" });
+  assert.ok(again.token);
+
+  await logout(again.token);
+  const gone = await userFromToken(again.token);
   assert.equal(gone, null);
 
   console.log("auth ok");

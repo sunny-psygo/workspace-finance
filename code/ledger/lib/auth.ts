@@ -126,6 +126,34 @@ export async function logout(token: string | null | undefined) {
   await db.session.deleteMany({ where: { id: token } });
 }
 
+const changePasswordInput = z.object({
+  currentPassword: z.string().min(1).max(128),
+  newPassword: z.string().min(8).max(128),
+});
+
+export async function changePassword(userId: string, input: z.input<typeof changePasswordInput>) {
+  const parsed = changePasswordInput.safeParse(input);
+  if (!parsed.success) {
+    throw new AuthError(
+      "密码字段不合要求。",
+      "AUTH_INVALID",
+      parsed.error.issues.map((issue) => issue.path.join(".") + " " + issue.message).join("；"),
+    );
+  }
+  if (parsed.data.newPassword === parsed.data.currentPassword) {
+    throw new AuthError("新密码不能与当前密码相同。", "AUTH_INVALID", "换一个新密码。");
+  }
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user || !user.active) throw new AuthError("账号不可用。", "AUTH_INACTIVE", "联系管理员。");
+  const ok = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
+  if (!ok) throw new AuthError("当前密码不正确。", "AUTH_INVALID", "核对后再试。");
+  await db.user.update({
+    where: { id: userId },
+    data: { passwordHash: await hashPassword(parsed.data.newPassword) },
+  });
+  await db.session.deleteMany({ where: { userId } });
+}
+
 export async function userFromToken(token: string | null | undefined): Promise<AuthUser | null> {
   if (!token) return null;
   const session = await db.session.findUnique({
