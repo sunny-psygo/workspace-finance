@@ -108,7 +108,7 @@ export type ActionInput = z.input<typeof actionInput>;
 const claimInclude = {
   items: { include: { attachments: true } },
   events: { orderBy: { createdAt: "asc" as const } },
-  payment: true,
+  allocations: { orderBy: { createdAt: "asc" as const } },
 };
 
 function roleAllowed(action: ActionInput["action"], user: AuthUser) {

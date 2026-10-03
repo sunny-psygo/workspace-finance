@@ -26,14 +26,24 @@ type Claim = {
   revision: number;
   purpose: string;
   totalCents: number;
+  paidCents?: number;
   entryId?: string | null;
   paymentEntryId?: string | null;
-  payment?: { voucherNo: string; bankAccountCode: string } | null;
   items?: Array<{
     id: string;
     memo: string;
     attachments?: Array<{ id: string; fileName: string }>;
   }>;
+  allocations?: Array<{ id: string; cents: number; voucherNo: string }>;
+};
+
+type Statement = {
+  id: string;
+  reference: string;
+  cents: number;
+  remainingCents: number;
+  bankAccountCode: string;
+  paidOn: string;
 };
 
 function yuan(cents: number) {
@@ -57,6 +67,7 @@ export default function Page() {
   const [bookId, setBookId] = useState("");
   const [rows, setRows] = useState<BalanceRow[]>([]);
   const [claim, setClaim] = useState<Claim | null>(null);
+  const [statements, setStatements] = useState<Statement[]>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
   useEffect(() => {
@@ -151,23 +162,42 @@ export default function Page() {
     await refreshBalance();
   }
 
-  async function payClaim(event: FormEvent<HTMLFormElement>) {
+  async function importStatement(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    const yuanAmount = Number(form.get("amount"));
+    await call(`/api/books/${bookId}/statements`, {
+      paidOn: form.get("paidOn"),
+      cents: Math.round(yuanAmount * 100),
+      bankAccountCode: form.get("bankAccountCode") || "1002",
+      reference: form.get("reference"),
+      counterparty: form.get("counterparty") || "",
+      remark: form.get("remark") || "",
+    });
+    setNotice("银行流水已导入。");
+    await refreshStatements();
+  }
+
+  async function allocateClaim(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!claim) return;
     const form = new FormData(event.currentTarget);
-    const payload = await call<{ claim: Claim }>(`/api/claims/${claim.id}/payment`, {
+    const yuanAmount = Number(form.get("amount"));
+    const payload = await call<{ claim: Claim }>(`/api/claims/${claim.id}/allocations`, {
+      statementId: form.get("statementId"),
+      cents: Math.round(yuanAmount * 100),
       expectedRevision: claim.revision,
-      mutationId: `pay-${claim.revision}-${Date.now()}`,
-      voucherNo: form.get("voucherNo"),
-      paidOn: form.get("paidOn"),
-      bankAccountCode: form.get("bankAccountCode") || "1002",
-      remark: form.get("remark") || "已付",
+      mutationId: `alloc-${claim.revision}-${Date.now()}`,
+      remark: form.get("remark") || "匹配付款",
+      voucherNo: form.get("voucherNo") || "",
       fileName: String(form.get("fileName") || "receipt.txt"),
       fileBase64: btoa(unescape(encodeURIComponent(String(form.get("fileText") || "payment-proof")))),
     });
     setClaim(payload.claim);
-    setNotice(`付款完成：${payload.claim.payment?.voucherNo}`);
+    setNotice(`已核销 ${yuan(payload.claim.paidCents || 0)} / ${yuan(payload.claim.totalCents)} 元`);
     await refreshBalance();
+    await refreshStatements();
   }
 
   async function refreshBalance() {
@@ -176,13 +206,19 @@ export default function Page() {
     setRows(payload.rows);
   }
 
+  async function refreshStatements() {
+    if (!bookId) return;
+    const payload = await call<{ statements: Statement[] }>(`/api/books/${bookId}/statements`);
+    setStatements(payload.statements);
+  }
+
   const roles = user?.roles ?? [];
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-stone-500">登录鉴权 · 明细附件 · 报销审批 · 付款核销应付</p>
+          <p className="text-sm text-stone-500">登录 · 附件 · 发票查重 · 审批 · 银行流水匹配</p>
           <h1 className="mt-1 text-3xl font-semibold">账本</h1>
           <p className="mt-2 text-stone-600">{notice}</p>
         </div>
@@ -264,7 +300,7 @@ export default function Page() {
               <CardTitle>审批</CardTitle>
               <p className="mt-3 text-sm text-stone-600">
                 {claim
-                  ? `当前 ${claim.status} · revision ${claim.revision} · ${yuan(claim.totalCents)} 元`
+                  ? `当前 ${claim.status} · revision ${claim.revision} · 已付 ${yuan(claim.paidCents || 0)} / ${yuan(claim.totalCents)} 元`
                   : "先保存草稿"}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -281,17 +317,35 @@ export default function Page() {
             </Card>
           </section>
 
-          <section className="mt-6">
+          <section className="mt-6 grid gap-4 md:grid-cols-2">
             <Card>
-              <form onSubmit={payClaim}>
-                <CardTitle>付款凭证（出纳）</CardTitle>
-                <Input className="mt-3" name="voucherNo" placeholder="回单号" defaultValue="BANK20261003001" required disabled={!claim} />
-                <Input className="mt-2" name="paidOn" type="date" required disabled={!claim} />
-                <Input className="mt-2" name="bankAccountCode" placeholder="银行科目" defaultValue="1002" required disabled={!claim} />
-                <Input className="mt-2" name="remark" placeholder="说明" defaultValue="已付" required disabled={!claim} />
-                <Input className="mt-2" name="fileName" placeholder="文件名" defaultValue="receipt.txt" required disabled={!claim} />
-                <Input className="mt-2" name="fileText" placeholder="回单文本（演示）" defaultValue="payment-proof" required disabled={!claim} />
-                <Button className="mt-3" disabled={!claim || !roles.includes("cashier") || claim.status !== "paymentVoucher"}>上传并核销应付</Button>
+              <form onSubmit={importStatement}>
+                <CardTitle>导入银行流水（出纳/财务）</CardTitle>
+                <Input className="mt-3" name="reference" placeholder="流水号" defaultValue="BANK20261004001" required disabled={!bookId} />
+                <Input className="mt-2" name="paidOn" type="date" required disabled={!bookId} />
+                <Input className="mt-2" name="amount" placeholder="支出金额（元）" defaultValue="128" required disabled={!bookId} />
+                <Input className="mt-2" name="bankAccountCode" defaultValue="1002" required disabled={!bookId} />
+                <Input className="mt-2" name="counterparty" placeholder="对方" defaultValue="张三" disabled={!bookId} />
+                <Input className="mt-2" name="remark" placeholder="摘要" defaultValue="报销付款" disabled={!bookId} />
+                <Button className="mt-3" disabled={!bookId || (!roles.includes("cashier") && !roles.includes("finance"))} type="submit">导入</Button>
+                <Button className="mt-3 ml-2" disabled={!bookId} type="button" onClick={refreshStatements}>刷新流水</Button>
+              </form>
+              <ul className="mt-3 space-y-1 text-sm text-stone-600">
+                {statements.map((row) => (
+                  <li key={row.id}>{row.reference} · 剩余 {yuan(row.remainingCents)} / {yuan(row.cents)} · {row.id.slice(0, 8)}</li>
+                ))}
+              </ul>
+            </Card>
+            <Card>
+              <form onSubmit={allocateClaim}>
+                <CardTitle>匹配付款（出纳）</CardTitle>
+                <Input className="mt-3" name="statementId" placeholder="流水 id" required disabled={!claim} />
+                <Input className="mt-2" name="amount" placeholder="本次核销（元）" defaultValue="60" required disabled={!claim} />
+                <Input className="mt-2" name="voucherNo" placeholder="回单号（可空）" disabled={!claim} />
+                <Input className="mt-2" name="remark" placeholder="说明" defaultValue="匹配付款" disabled={!claim} />
+                <Input className="mt-2" name="fileName" placeholder="回单文件名" defaultValue="receipt.txt" disabled={!claim} />
+                <Input className="mt-2" name="fileText" placeholder="回单文本（演示）" defaultValue="payment-proof" disabled={!claim} />
+                <Button className="mt-3" disabled={!claim || !roles.includes("cashier") || claim.status !== "paymentVoucher"}>匹配并核销</Button>
               </form>
             </Card>
           </section>

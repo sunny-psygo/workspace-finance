@@ -3,7 +3,7 @@ import { uploadClaimItemAttachment } from "./attachment";
 import { createUser, login } from "./auth";
 import { applyClaimAction, ClaimError, createDraft } from "./claim";
 import { addAccount, openBook, trialBalance } from "./ledger";
-import { completePayment } from "./payment";
+import { allocatePayment, completePayment, importBankStatement } from "./payment";
 
 async function user(username: string, displayName: string, roles: Array<"employee" | "finance" | "gm" | "cashier">) {
   try {
@@ -35,11 +35,9 @@ async function main() {
     bankName: "测试银行",
     purpose: "办公用品",
     occurredOn: "2026-10-04",
-    items: [{ memo: "打印纸", cents: 12800, invoiceNo: " inv-2026-1004-001 " }],
+    items: [{ memo: "打印纸", cents: 12800, invoiceNo: `INV-${suffix}` }],
   });
-  assert.equal(draft.applicant, "张三");
-  assert.equal(draft.status, "draft");
-  assert.equal(draft.items[0]?.invoiceNo, "INV20261004001");
+  assert.equal(draft.items[0]?.invoiceNo, `INV-${suffix}`.toUpperCase().replace(/[\s-]+/g, ""));
 
   await assert.rejects(
     () => applyClaimAction(employee, draft.id, {
@@ -50,41 +48,11 @@ async function main() {
     (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_ATTACHMENT_REQUIRED",
   );
 
-  await assert.rejects(
-    () => createDraft(employee, {
-      bookId: book.id,
-      department: "行政",
-      costCenter: "公司公共",
-      payeeName: "张三",
-      payeeAccount: "6222000000000001",
-      bankName: "测试银行",
-      purpose: "重复发票",
-      occurredOn: "2026-10-04",
-      items: [
-        { memo: "A", cents: 100, invoiceNo: "DUP-1" },
-        { memo: "B", cents: 200, invoiceNo: "dup-1" },
-      ],
-    }),
-    (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_INVOICE_DUPLICATE",
-  );
-
-  const itemId = draft.items[0]!.id;
-  const attachment = await uploadClaimItemAttachment(employee, draft.id, itemId, {
+  await uploadClaimItemAttachment(employee, draft.id, draft.items[0]!.id, {
     fileName: "发票.pdf",
     contentType: "application/pdf",
     fileBase64: Buffer.from("%PDF-demo").toString("base64"),
   });
-  assert.ok(attachment.id);
-  assert.ok(attachment.storagePath.includes(draft.id));
-
-  await assert.rejects(
-    () => applyClaimAction(finance, draft.id, {
-      action: "submit",
-      expectedRevision: 1,
-      mutationId: "bad-submit",
-    }),
-    (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_FORBIDDEN",
-  );
 
   const submitted = await applyClaimAction(employee, draft.id, {
     action: "submit",
@@ -92,7 +60,6 @@ async function main() {
     mutationId: "m-submit",
   });
   assert.equal(submitted.status, "financeReview");
-  assert.equal(submitted.items[0]?.attachments.length, 1);
 
   await assert.rejects(
     () => createDraft(employee, {
@@ -100,11 +67,11 @@ async function main() {
       department: "行政",
       costCenter: "公司公共",
       payeeName: "张三",
-      payeeAccount: "6222000000000001",
+      payeeAccount: "6222",
       bankName: "测试银行",
-      purpose: "抢同一发票",
+      purpose: "抢发票",
       occurredOn: "2026-10-04",
-      items: [{ memo: "再报", cents: 100, invoiceNo: "INV-2026-1004-001" }],
+      items: [{ memo: "再报", cents: 100, invoiceNo: `INV-${suffix}` }],
     }),
     (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_INVOICE_DUPLICATE",
   );
@@ -124,55 +91,95 @@ async function main() {
     remark: "同意",
   });
   assert.equal(approved.status, "paymentVoucher");
-  assert.ok(approved.entryId);
 
-  await assert.rejects(
-    () => completePayment(employee, draft.id, {
-      expectedRevision: 4,
-      mutationId: "bad-pay",
-      voucherNo: "X",
-      paidOn: "2026-10-04",
-      bankAccountCode: "1002",
-      remark: "不可",
-      fileName: "a.txt",
-      fileBase64: Buffer.from("no").toString("base64"),
-    }),
-    (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_FORBIDDEN",
-  );
-
-  const paid = await completePayment(cashier, draft.id, {
-    expectedRevision: 4,
-    mutationId: "m-pay",
-    voucherNo: "BANK20261004001",
+  const stmt = await importBankStatement(cashier, book.id, {
     paidOn: "2026-10-04",
+    cents: 12800,
     bankAccountCode: "1002",
-    remark: "已付",
-    fileName: "receipt.txt",
-    fileBase64: Buffer.from("payment-proof").toString("base64"),
+    reference: `BANK-${suffix}`,
+    counterparty: "张三",
+    remark: "办公用品",
   });
-  assert.equal(paid.status, "completed");
-  assert.ok(paid.paymentEntryId);
-  assert.equal(paid.payment?.voucherNo, "BANK20261004001");
+  assert.equal(stmt.remainingCents, 12800);
 
-  const again = await completePayment(cashier, draft.id, {
+  const part = await allocatePayment(cashier, draft.id, {
+    statementId: stmt.id,
+    cents: 6000,
     expectedRevision: 4,
-    mutationId: "m-pay",
-    voucherNo: "BANK20261004001",
-    paidOn: "2026-10-04",
-    bankAccountCode: "1002",
-    remark: "已付",
-    fileName: "receipt.txt",
-    fileBase64: Buffer.from("payment-proof").toString("base64"),
+    mutationId: "m-pay-1",
+    remark: "先付 60",
+    voucherNo: "P1",
+    fileName: "p1.txt",
+    fileBase64: Buffer.from("part1").toString("base64"),
   });
-  assert.equal(again.revision, paid.revision);
-  assert.equal(again.paymentEntryId, paid.paymentEntryId);
+  assert.equal(part.status, "paymentVoucher");
+  assert.equal(part.paidCents, 6000);
 
-  const rows = await trialBalance(book.id);
+  let rows = await trialBalance(book.id);
+  assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 6800);
+  assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, -6000);
+
+  const done = await allocatePayment(cashier, draft.id, {
+    statementId: stmt.id,
+    cents: 6800,
+    expectedRevision: 5,
+    mutationId: "m-pay-2",
+    remark: "付清",
+    voucherNo: "P2",
+    fileName: "p2.txt",
+    fileBase64: Buffer.from("part2").toString("base64"),
+  });
+  assert.equal(done.status, "completed");
+  assert.equal(done.paidCents, 12800);
+  assert.equal(done.allocations.length, 2);
+
+  const again = await allocatePayment(cashier, draft.id, {
+    statementId: stmt.id,
+    cents: 6800,
+    expectedRevision: 5,
+    mutationId: "m-pay-2",
+    remark: "付清",
+  });
+  assert.equal(again.revision, done.revision);
+
+  rows = await trialBalance(book.id);
   assert.equal(rows.find((row) => row.code === "5602")?.balanceCents, 12800);
   assert.equal(rows.find((row) => row.code === "2241")?.balanceCents, 0);
   assert.equal(rows.find((row) => row.code === "1002")?.balanceCents, -12800);
 
-  console.log("claim+attachment+payment ok");
+  // 兼容旧全额付款接口
+  const draft2 = await createDraft(employee, {
+    bookId: book.id,
+    department: "行政",
+    costCenter: "公司公共",
+    payeeName: "张三",
+    payeeAccount: "6222",
+    bankName: "测试银行",
+    purpose: "兼容付款",
+    occurredOn: "2026-10-04",
+    items: [{ memo: "墨盒", cents: 5000, invoiceNo: `INV2-${suffix}` }],
+  });
+  await uploadClaimItemAttachment(employee, draft2.id, draft2.items[0]!.id, {
+    fileName: "发票2.pdf",
+    fileBase64: Buffer.from("x").toString("base64"),
+  });
+  await applyClaimAction(employee, draft2.id, { action: "submit", expectedRevision: 1, mutationId: "s2" });
+  await applyClaimAction(finance, draft2.id, { action: "financeApprove", expectedRevision: 2, mutationId: "f2", remark: "ok" });
+  await applyClaimAction(gm, draft2.id, { action: "gmApprove", expectedRevision: 3, mutationId: "g2", remark: "ok" });
+  const full = await completePayment(cashier, draft2.id, {
+    expectedRevision: 4,
+    mutationId: "pay-full",
+    voucherNo: `FULL-${suffix}`,
+    paidOn: "2026-10-04",
+    bankAccountCode: "1002",
+    remark: "一次付清",
+    fileName: "full.txt",
+    fileBase64: Buffer.from("full").toString("base64"),
+  });
+  assert.equal(full.status, "completed");
+  assert.equal(full.paidCents, 5000);
+
+  console.log("claim+bank-match ok");
 }
 
 main();

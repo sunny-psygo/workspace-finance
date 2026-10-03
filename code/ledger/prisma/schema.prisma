@@ -34,13 +34,14 @@ model Session {
 }
 
 model Book {
-  id        String   @id
-  name      String
-  currency  String   @default("CNY")
-  createdAt DateTime @default(now())
-  accounts  Account[]
-  entries   Entry[]
-  claims    Claim[]
+  id         String          @id
+  name       String
+  currency   String          @default("CNY")
+  createdAt  DateTime        @default(now())
+  accounts   Account[]
+  entries    Entry[]
+  claims     Claim[]
+  statements BankStatement[]
 }
 
 model Account {
@@ -106,6 +107,8 @@ model Claim {
   expenseAccountCode  String      @default("5602")
   payableAccountCode  String      @default("2241")
   totalCents          Int         @default(0)
+  // 已通过银行流水核销的应付金额（分）
+  paidCents           Int         @default(0)
   entryId             String?
   paymentEntryId      String?
   remark              String?
@@ -113,7 +116,7 @@ model Claim {
   updatedAt           DateTime    @updatedAt
   items               ClaimItem[]
   events              ClaimEvent[]
-  payment             PaymentVoucher?
+  allocations         PaymentAllocation[]
 
   @@index([bookId, status])
 }
@@ -162,19 +165,43 @@ model ClaimEvent {
   @@unique([claimId, mutationId])
 }
 
-// 付款回单：证据 + 全额核销应付（借应付、贷银行）
-model PaymentVoucher {
-  id               String   @id
-  claimId          String   @unique
-  claim            Claim    @relation(fields: [claimId], references: [id], onDelete: Cascade)
-  voucherNo        String
-  paidOn           String
-  bankAccountCode  String
-  cents            Int
-  fileName         String
-  storagePath      String
-  remark           String
-  entryId          String
-  uploadedBy       String
-  createdAt        DateTime @default(now())
+// 银行支出流水：可分次匹配到待付款单据
+model BankStatement {
+  id              String              @id
+  bookId          String
+  book            Book                @relation(fields: [bookId], references: [id])
+  paidOn          String
+  // 流出为正（分）
+  cents           Int
+  remainingCents  Int
+  bankAccountCode String
+  reference       String
+  counterparty    String              @default("")
+  remark          String              @default("")
+  createdAt       DateTime            @default(now())
+  allocations     PaymentAllocation[]
+
+  @@unique([bookId, reference])
+  @@index([bookId, remainingCents])
+}
+
+// 流水与报销单的一次匹配：借应付、贷银行
+model PaymentAllocation {
+  id           String        @id
+  claimId      String
+  claim        Claim         @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  statementId  String
+  statement    BankStatement @relation(fields: [statementId], references: [id])
+  cents        Int
+  entryId      String
+  mutationId   String
+  voucherNo    String        @default("")
+  fileName     String        @default("")
+  storagePath  String        @default("")
+  remark       String        @default("")
+  uploadedBy   String
+  createdAt    DateTime      @default(now())
+
+  @@unique([claimId, mutationId])
+  @@index([statementId])
 }
