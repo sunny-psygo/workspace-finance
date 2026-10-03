@@ -117,7 +117,11 @@ export default function Page() {
       occurredOn: form.get("occurredOn"),
       expenseAccountCode: form.get("expenseAccountCode") || "5602",
       payableAccountCode: form.get("payableAccountCode") || "2241",
-      items: [{ memo: String(form.get("itemMemo") || form.get("purpose")), cents: amount }],
+      items: [{
+        memo: String(form.get("itemMemo") || form.get("purpose")),
+        cents: amount,
+        invoiceNo: String(form.get("invoiceNo") || ""),
+      }],
     });
     const itemId = payload.claim.items?.[0]?.id;
     let claim = payload.claim;
@@ -246,6 +250,7 @@ export default function Page() {
                 <Input className="mt-2" name="bankName" placeholder="开户行" defaultValue="测试银行" required disabled={!bookId} />
                 <Input className="mt-2" name="purpose" placeholder="事由" defaultValue="办公用品" required disabled={!bookId} />
                 <Input className="mt-2" name="itemMemo" placeholder="明细说明" defaultValue="打印纸" required disabled={!bookId} />
+                <Input className="mt-2" name="invoiceNo" placeholder="发票号（可空）" defaultValue="INV-DEMO-001" disabled={!bookId} />
                 <Input className="mt-2" name="occurredOn" type="date" required disabled={!bookId} />
                 <Input className="mt-2" name="amount" placeholder="金额（元）" defaultValue="128" required disabled={!bookId} />
                 <Input className="mt-2" name="expenseAccountCode" defaultValue="5602" disabled={!bookId} />

@@ -21,8 +21,65 @@ export type ClaimStatus = (typeof claimStatuses)[number];
 const itemInput = z.object({
   category: z.string().trim().max(40).optional(),
   memo: z.string().trim().min(1).max(120),
+  invoiceNo: z.string().trim().max(64).optional(),
   cents: z.number().int().positive(),
 });
+
+const ignoredInvoiceLabels = new Set(["", "无", "无票", "无发票", "支付截图"]);
+
+export function normalizeInvoiceNo(value: string | undefined | null) {
+  const raw = String(value ?? "").trim().toUpperCase().replace(/[\s-]+/g, "");
+  if (!raw || ignoredInvoiceLabels.has(String(value ?? "").trim()) || ignoredInvoiceLabels.has(raw)) {
+    return "";
+  }
+  return raw;
+}
+
+function assertNoDuplicateInvoiceNos(
+  items: Array<{ memo: string; invoiceNo?: string | null }>,
+) {
+  const seen = new Map<string, string>();
+  for (const item of items) {
+    const invoiceNo = normalizeInvoiceNo(item.invoiceNo);
+    if (!invoiceNo) continue;
+    const prior = seen.get(invoiceNo);
+    if (prior) {
+      throw new ClaimError(
+        `本单发票号重复：${invoiceNo}（${prior} 与 ${item.memo}）。`,
+        "CLAIM_INVOICE_DUPLICATE",
+        "同一张单里不要填相同发票号。",
+      );
+    }
+    seen.set(invoiceNo, item.memo);
+  }
+}
+
+async function assertInvoicesAvailable(bookId: string, claimId: string, items: Array<{ memo: string; invoiceNo?: string | null }>) {
+  assertNoDuplicateInvoiceNos(items);
+  const invoiceNos = [...new Set(items.map((item) => normalizeInvoiceNo(item.invoiceNo)).filter(Boolean))];
+  if (!invoiceNos.length) return;
+  const conflicts = await db.claimItem.findMany({
+    where: {
+      invoiceNo: { in: invoiceNos },
+      claim: {
+        bookId,
+        id: { not: claimId },
+        status: { not: "voided" },
+      },
+    },
+    include: { claim: { select: { id: true, status: true, purpose: true } } },
+    take: 20,
+  });
+  if (!conflicts.length) return;
+  const detail = conflicts
+    .map((row) => `${row.invoiceNo} 已在单据 ${row.claim.id}（${row.claim.status}）`)
+    .join("；");
+  throw new ClaimError(
+    `发票号已被占用：${detail}。`,
+    "CLAIM_INVOICE_DUPLICATE",
+    "换发票，或先作废占用该号的单据。",
+  );
+}
 
 const draftInput = z.object({
   bookId: z.string().trim().min(1),
@@ -96,10 +153,13 @@ export async function createDraft(user: AuthUser, input: DraftInput) {
   const data = parsed.data;
   const book = await db.book.findUnique({ where: { id: data.bookId } });
   if (!book) throw new ClaimError("账套不存在。", "CLAIM_INVALID", "先开账，再用返回的 bookId。");
+  assertNoDuplicateInvoiceNos(data.items);
   const totalCents = data.items.reduce((sum, item) => sum + item.cents, 0);
+  const claimId = randomUUID();
+  await assertInvoicesAvailable(data.bookId, claimId, data.items);
   return db.claim.create({
     data: {
-      id: randomUUID(),
+      id: claimId,
       bookId: data.bookId,
       requestType: "expense",
       status: "draft",
@@ -120,6 +180,7 @@ export async function createDraft(user: AuthUser, input: DraftInput) {
           id: randomUUID(),
           category: item.category ?? "",
           memo: item.memo,
+          invoiceNo: normalizeInvoiceNo(item.invoiceNo),
           cents: item.cents,
         })),
       },
@@ -189,6 +250,7 @@ export async function applyClaimAction(user: AuthUser, claimId: string, input: A
   const toStatus = nextStatus(data.action, fromStatus);
   if (data.action === "submit") {
     await assertClaimItemsHaveAttachments(claim.items);
+    await assertInvoicesAvailable(claim.bookId, claim.id, claim.items);
   }
   const eventRole = data.action === "submit"
     ? "employee"

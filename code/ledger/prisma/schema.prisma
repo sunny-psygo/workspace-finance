@@ -124,8 +124,12 @@ model ClaimItem {
   claim       Claim             @relation(fields: [claimId], references: [id], onDelete: Cascade)
   category    String            @default("")
   memo        String
+  // 规范化后的发票号；空串表示无票/不参与查重
+  invoiceNo   String            @default("")
   cents       Int
   attachments ClaimAttachment[]
+
+  @@index([invoiceNo])
 }
 
 model ClaimAttachment {

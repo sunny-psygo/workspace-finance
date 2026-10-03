@@ -8,6 +8,7 @@
 - 出纳付款：借应付、贷银行（`design/payment.md`）
 - 登录与角色：`design/auth.md`
 - 明细附件：`design/attachments.md`（submit 前每条明细至少一个已落盘文件）
+- 发票号查重：`design/invoice-dedup.md`（本单与跨单，作废后可再用）
 
 界面与 HTTP 调用同一套领域函数；角色来自服务端会话，不信任请求体自称角色。
 

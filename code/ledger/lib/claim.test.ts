@@ -35,10 +35,11 @@ async function main() {
     bankName: "测试银行",
     purpose: "办公用品",
     occurredOn: "2026-10-04",
-    items: [{ memo: "打印纸", cents: 12800 }],
+    items: [{ memo: "打印纸", cents: 12800, invoiceNo: " inv-2026-1004-001 " }],
   });
   assert.equal(draft.applicant, "张三");
   assert.equal(draft.status, "draft");
+  assert.equal(draft.items[0]?.invoiceNo, "INV20261004001");
 
   await assert.rejects(
     () => applyClaimAction(employee, draft.id, {
@@ -47,6 +48,24 @@ async function main() {
       mutationId: "no-attach",
     }),
     (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_ATTACHMENT_REQUIRED",
+  );
+
+  await assert.rejects(
+    () => createDraft(employee, {
+      bookId: book.id,
+      department: "行政",
+      costCenter: "公司公共",
+      payeeName: "张三",
+      payeeAccount: "6222000000000001",
+      bankName: "测试银行",
+      purpose: "重复发票",
+      occurredOn: "2026-10-04",
+      items: [
+        { memo: "A", cents: 100, invoiceNo: "DUP-1" },
+        { memo: "B", cents: 200, invoiceNo: "dup-1" },
+      ],
+    }),
+    (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_INVOICE_DUPLICATE",
   );
 
   const itemId = draft.items[0]!.id;
@@ -74,6 +93,21 @@ async function main() {
   });
   assert.equal(submitted.status, "financeReview");
   assert.equal(submitted.items[0]?.attachments.length, 1);
+
+  await assert.rejects(
+    () => createDraft(employee, {
+      bookId: book.id,
+      department: "行政",
+      costCenter: "公司公共",
+      payeeName: "张三",
+      payeeAccount: "6222000000000001",
+      bankName: "测试银行",
+      purpose: "抢同一发票",
+      occurredOn: "2026-10-04",
+      items: [{ memo: "再报", cents: 100, invoiceNo: "INV-2026-1004-001" }],
+    }),
+    (error: unknown) => error instanceof ClaimError && error.code === "CLAIM_INVOICE_DUPLICATE",
+  );
 
   const financed = await applyClaimAction(finance, draft.id, {
     action: "financeApprove",
