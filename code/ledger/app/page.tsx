@@ -35,6 +35,7 @@ type Claim = {
     memo: string;
     attachments?: Array<{ id: string; fileName: string }>;
   }>;
+  // attachments links use /api/attachments/:id
   allocations?: Array<{ id: string; cents: number; voucherNo: string }>;
 };
 
@@ -406,7 +407,16 @@ export default function Page() {
                 <Button disabled={!claim || (!roles.includes("finance") && !roles.includes("gm")) || (claim.status !== "financeReview" && claim.status !== "gmReview")} onClick={() => runAction("reject", "资料不全")}>驳回</Button>
               </div>
               {claim?.items?.[0]?.attachments?.length
-                ? <p className="mt-3 text-sm">明细附件：{claim.items[0].attachments.map((a) => a.fileName).join("、")}</p>
+                ? (
+                  <p className="mt-3 text-sm">
+                    明细附件：
+                    {claim.items[0].attachments.map((a) => (
+                      <a key={a.id} className="ml-2 text-sky-700 underline" href={`/api/attachments/${a.id}`} target="_blank" rel="noreferrer">
+                        {a.fileName}
+                      </a>
+                    ))}
+                  </p>
+                )
                 : claim ? <p className="mt-3 text-sm text-amber-700">还没有明细附件，提交会被拒绝</p> : null}
               {claim?.entryId ? <p className="mt-1 text-sm">应付分录：{claim.entryId}</p> : null}
               {claim?.paymentEntryId ? <p className="mt-1 text-sm">付款分录：{claim.paymentEntryId}</p> : null}
