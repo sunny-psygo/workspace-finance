@@ -1,74 +1,93 @@
-# 认知：给事物下定义的能力
+# Cognition: the ability to define things
 
-**一个开发者最重要的能力，是给事物下定义的能力。**
+**A developer's most important ability is the ability to define things.**
 
-认知和抽象是一体两面：所谓抽象，就是把一个东西是什么说清楚。
-所以「设计」这件事最根本的内容不是画结构、选技术栈，而是形成认知
-（见 [事前设计优于事后救火](upfront-design.md)）。
+Cognition and abstraction are two sides of one thing: abstraction is saying
+clearly what something is. So the most fundamental content of "design" is
+not drawing structure or picking a tech stack. It is forming a cognition
+(see [upfront design beats firefighting](upfront-design.md)).
 
-## 每一层都有认知
+## There is a cognition at every level
 
-- **对整个产品的认知**：我们做的到底是什么东西？
-- **对一个模块的认知**：它在系统里扮演什么角色？
-- **对一个函数的认知**：它承诺了什么，不承诺什么？
-- **对一个变量的认知**：它到底代表什么？
+- **Of the whole product**: what are we actually making?
+- **Of a module**: what role does it play in the system?
+- **Of a function**: what does it promise, and what does it not promise?
+- **Of a variable**: what does it actually stand for?
 
-大到产品设计，小到一句变量声明，需要的是同一种能力。
-区别只在于：有时候你是有意识地在下定义，有时候是下意识的，
-**更多时候是无意识的——而无意识的那些恰恰最容易错**，
-因为错了也没人会停下来检查。
+From product design down to a single variable declaration, the ability
+required is the same. The only difference is that sometimes you define
+consciously, sometimes subconsciously, and **most often unconsciously — and
+the unconscious ones are exactly the easiest to get wrong**, because when
+they are wrong nobody stops to check.
 
-认知设计得好，一切都会显得自然，**bug 天然不会出现，因为 bug 是不自然的**
-（见 [优秀是默认值](excellence-by-default.md)）。
-反过来也成立，而且是个很好用的信号：
-**一个地方总要靠打补丁才能维持，通常不是实现写错了，而是那里的认知一开始就错了。**
+When the cognition is designed well, everything looks natural, and **bugs
+simply don't arise, because a bug is unnatural**
+(see [excellence is the default](excellence-by-default.md)).
+The reverse holds too, and it is a very useful signal:
+**a place that can only be kept standing by patches is usually not an
+implementation written wrong. The cognition there was wrong from the
+start.**
 
-## 认知需要足够的上下文
+## Cognition needs enough context
 
-这是最容易被忽略、代价却最大的一点：
+This is the point most easily skipped, and the one with the largest cost:
 
-> **基于一个局部下的定义，一定是错的定义。**
+> **A definition made from a fragment is certainly a wrong definition.**
 
-而现实中，拿不到全貌是常态：
+And in practice, not having the whole picture is the normal case:
 
-- **团队协作里，每个人经常像盲人摸象**，手里只有整头象的一个点：
-  一张需求单、一个 issue、一次会议纪要。
-  照着那个点去下定义，得到的抽象必然是畸形的——
-  它对那个点成立，对别的点全都不成立。
-- **用 AI 用得不好的人，也不会给 AI 完整的上下文。**
-  于是 AI 同样在摸象，而且它摸得又快又流畅，
-  会顺着那一个点飞快地写出一大堆自洽但错位的东西。
+- **In a team, everyone is often like the blind men and the elephant**,
+  holding only one point of the whole animal: one ticket, one issue, the
+  notes from one meeting. Define from that point and the abstraction you get
+  is necessarily deformed — it holds for that point and fails for every
+  other one.
+- **Someone who uses AI badly also fails to give the AI the full context.**
+  So the AI is feeling the elephant too, and it feels fast and fluently,
+  writing a great pile of self-consistent but misaligned things along that
+  single point.
 
-所以**人和 AI 都要主动理解自己的定位**：
+So **both humans and AI have to actively understand where they stand**:
 
-1. **先判断**：我手里的是全貌，还是一个点？
-2. **缺了就去补**：去读上下游的代码，去问提需求的人，
-   去搞清楚「这个需求背后真正要解决的是什么」，
-   去看看有没有别人已经解决过同一类问题。
-3. **补不到的，就明确写成假设**，而不是默默当成事实。
+1. **Judge first**: do I hold the whole picture, or one point?
+2. **If something is missing, go fill it in**: read the code upstream and
+   downstream, ask the person who raised the request, figure out what the
+   request is actually trying to solve, and see whether someone has already
+   solved the same kind of problem.
+3. **What you cannot fill in, write down explicitly as an assumption**,
+   rather than silently treating it as fact.
 
-**理解了更完整的背景，才可能有更好的认知和更准确的抽象。**
-反过来，跳过这一步直接开写，就是
-[minimalism](minimalism.md) 里说的第二种退化模式——build too literally——的源头：
-不是人不想做通用设计，是他手里那一个点根本推不出通用设计。
+**Only with a more complete background can you have a better cognition and a
+more accurate abstraction.** Conversely, skipping this step and starting to
+write is the source of the second mode of decay in
+[minimalism](minimalism.md) — build too literally. It is not that the person
+doesn't want a general design. The single point in their hand cannot yield
+one.
 
-## 怎么用
+## How to use it
 
-- **上下文自检。** 动手前问：这东西的使用者是谁？上下游是什么？
-  为什么是现在做？不做会怎样？还有谁碰过这块？
-  答不上来的项越多，越不该急着写。
-- **命名是认知的体检。** 名字起不顺、只能起成 `data`、`info`、`manager`、`handle`，
-  通常不是词汇量问题，是这个东西是什么还没想清楚。
-- **一句话定义。** 说不清、或者只能同义反复（「一个用来管理 X 的管理器」），
-  说明认知还没成形。
-- **反复要加特例**，是定义错了的信号。
-  这时候继续修补是在加倍下注，正确的做法是回到「这东西到底是什么」重想。
+- **A context self-check.** Before starting, ask: who uses this thing? What
+  is upstream and downstream of it? Why is it being done now? What happens
+  if it isn't? Who else has touched this area? The more of these you can't
+  answer, the less you should rush to write.
+- **Naming is a physical for the cognition.** A name that won't come out
+  right, that can only be `data`, `info`, `manager`, `handle`, is usually
+  not a vocabulary problem. You haven't figured out what the thing is yet.
+- **A one-sentence definition.** If you can't say it, or can only say it as
+  a tautology ("a manager for managing X"), the cognition hasn't formed.
+- **Repeatedly having to add special cases** is a signal that the definition
+  is wrong. Patching further at that point is doubling down. The right move
+  is to go back and rethink "what is this thing, actually".
 
-对 AI 尤其重要：**拿到任务先判断上下文够不够，不够就先去读、去问，
-而不是照着字面直接开写。** 照字面开写是最快的，也是最容易写出错位设计的。
+This matters especially for AI: **when you receive a task, first judge
+whether the context is enough. If it isn't, go read and go ask before
+writing to the letter.** Writing to the letter is the fastest, and it is
+also the easiest way to write a misaligned design.
 
-## 这条规范不是什么
+## What this rule is not
 
-**不是要求全知之后才能动手。** 上下文永远不完整，等齐了再干等于瘫痪。
-它要求的是：**你知道自己站在哪、缺什么，缺的那部分要么去补，要么明确标成假设。**
-最危险的状态不是信息不足，而是信息不足却不自知。
+**It does not require omniscience before you may start.** Context is never
+complete, and waiting until it is means paralysis. What it requires is:
+**you know where you stand and what you lack, and the missing part is either
+filled in or explicitly marked as an assumption.** The most dangerous state
+is not insufficient information. It is insufficient information you don't
+know you have.

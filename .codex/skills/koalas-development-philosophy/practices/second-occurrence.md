@@ -1,36 +1,47 @@
-# 同一类问题出现第二次，就不许再就地修
+# The second time the same kind of problem appears, fixing it in place is no longer allowed
 
-**第一次可以就地修。第二次出现同一个根因的问题，停下来往上追。**
+**The first time, fixing it in place is fine. The second time a problem with
+the same root cause appears, stop and trace upward.**
 
-## 怎么做
+## How to do it
 
-第二次出现时，先写下追问链，再决定动手改哪里：
+On the second occurrence, write down the chain of questions before deciding
+where to change:
 
-> 为什么会有这个问题 → 为什么这个状态可能出现 → 为什么这里需要知道这件事？
+> Why does this problem exist → why can this state occur → why does this
+> place need to know about this?
 
-追到**「在这里改，这一整类问题都会一起消失」**那一层为止。
+Trace until the level where **"changing it here makes this whole class of
+problems disappear together"**.
 
-**产出不一定是立刻重构。** 可以只是一条记录：根因在哪、
-该怎么改、为什么现在不改。有记录，第三次出现时就不用重新推一遍。
+**The output doesn't have to be an immediate refactor.** It can be just a
+record: where the root cause is, how it should be changed, and why it isn't
+being changed now. With a record, the third occurrence doesn't require
+deriving it all over again.
 
-## 效果
+## Effect
 
-就地修的单次成本永远最低，所以只要不设触发条件，
-它会一直是那个「理性」的选择——直到系统里全是补丁。
-**「第二次」是一个便宜又明确的刹车点**：
-第一次不打扰你，第二次强制你抬头看一眼。
+The one-time cost of fixing in place is always the lowest, so without a
+trigger condition it stays the "rational" choice forever — until the system
+is full of patches. **"The second time" is a cheap and unambiguous braking
+point**: the first time it doesn't disturb you, the second time it forces you
+to look up.
 
-同类的触发信号还有：设计上左右为难、要加一个很奇怪的参数才能兼顾、
-一个特例长出了自己的特例。
+Signals of the same kind: a design stuck between two bad options, needing a
+very strange parameter to cover both, a special case that has grown its own
+special case.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **「同一类」要按根因算，不是按现象算。**
-  两个都是空指针，未必是同一件事；按现象算会让这条频繁误触发，
-  几次之后大家就不当回事了。
-- **别上纲上线。** 追问的终点是「能让一类问题消失的那一层」，
-  不是「重写整个系统」。会得出「所以要重构一切」的，通常是追过头了。
-- **线上事故先止血。** 这条管的是止血之后的动作，
-  不是让你在救火时先开设计讨论。
+- **"The same kind" is counted by root cause, not by phenomenon.**
+  Two null pointers are not necessarily the same thing. Counting by
+  phenomenon makes this fire wrongly and often, and after a few times nobody
+  takes it seriously.
+- **Don't escalate it.** The end of the questioning is "the level that makes
+  a class of problems disappear", not "rewrite the whole system". Reaching
+  "so everything has to be refactored" usually means you traced too far.
+- **A production incident stops the bleeding first.** This governs what
+  happens after the bleeding stops, not a design discussion opened in the
+  middle of the fire.
 
-出自[深挖本质问题](../principles/dig-to-the-root.md)。
+From [dig to the root](../principles/dig-to-the-root.md).

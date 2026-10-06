@@ -1,61 +1,75 @@
-# 深挖本质问题
+# Dig to the root
 
-**绝大多数问题的最优解，都不在问题出现的那个地方。**
+**The best solution to most problems is not where the problem shows up.**
 
-它在很上游——往前追几步，追到某个设计、某个抽象、某个定义上。
-所以碰到问题，**不要只盯着这个问题本身**：
-真正的解决方案往往在更深的地方，而在那里解决，成本还更低。
+It is far upstream — follow it back a few steps, to some design, some
+abstraction, some definition. So when you hit a problem, **don't stare only
+at the problem itself**: the real solution is often deeper, and solving it
+there costs less too.
 
-## 为什么
+## Why
 
-因为**好的设计会让一整类问题压根不出现**：
+Because **a good design makes a whole class of problems never appear**:
 
-- 代码结构设计得好，很多 bug 和性能问题从一开始就不会有机会发生。
-- 产品功能设计得好，很多用户反馈压根不会被提出来。
+- Structure the code well and many bugs and performance problems never get a
+  chance to happen in the first place.
+- Design the product well and many pieces of user feedback are never raised
+  in the first place.
 
-反过来说：**你现在看到的这个问题，很可能只是某个上游决定的一个症状。**
-在症状上修，修完还会有下一个；
-在上游修，这一类症状会一起消失（见[优秀是默认值](excellence-by-default.md)）。
+Put the other way: **the problem you are looking at is very likely just a
+symptom of some upstream decision.** Fix it at the symptom and there will be
+a next one; fix it upstream and the whole class of symptoms disappears
+together (see [excellence is the default](excellence-by-default.md)).
 
-这也是为什么 feature request 不能照字面做。
-用户报的**现象**是真的，他提的**解法**不一定是——
-他只能基于自己看到的那一小块提方案（见[认知](cognition.md)）。
-照字面实现，就是[minimalism](minimalism.md) 里那种「缺什么补什么」的浅层解。
+This is also why a feature request cannot be taken literally. The
+**phenomenon** the user reports is real; the **solution** they propose may
+not be — they can only propose from the small piece they can see (see
+[cognition](cognition.md)). Implementing it literally is the shallow
+"patch whatever is missing" solution in [minimalism](minimalism.md).
 
-## 最有用的一个信号
+## The single most useful signal
 
-> **当你觉得一个东西的设计左右为难的时候，
-> 很可能不是这里难，而是某个更顶层的设计出了问题，
-> 或者你对某个东西还没想清楚。**
+> **When you feel a design is stuck between two bad options, it is probably
+> not that this spot is hard. Some design further up has a problem, or you
+> haven't thought something through yet.**
 
-「怎么写都别扭」「两个方案各有一半不对」「要加一个很奇怪的参数才能兼顾」——
-这些都不是让你在两个烂选项里挑一个的信号，
-是让你**往上一层去看**的信号。
+"However I write it, it feels wrong." "Each of the two options is half
+wrong." "It takes a very strange parameter to cover both." None of these is
+a signal to pick one of two rotten options. They are a signal to **go look
+one level up**.
 
-同类的信号还有：同一种 bug 修了第三次、
-一个特例长出了自己的特例、加一个功能要动五个不相干的地方。
+Signals of the same kind: the same bug fixed for the third time, a special
+case that has grown its own special case, adding one feature that touches
+five unrelated places.
 
-## 怎么用
+## How to use it
 
-**往上追问，追到「改这里，这一整类问题都会消失」那一层。**
+**Keep asking upward, until the level where "changing it here makes this
+whole class of problems disappear".**
 
-- bug：为什么会有这个 bug → 为什么这个状态可能出现 →
-  为什么这个模块需要知道这件事？
-- 性能：为什么这里慢 → 为什么要做这么多次 → 为什么这个数据要在这里出现？
-- 需求：他要这个功能 → 他要用它完成什么 → 那件事本来该由什么来完成？
+- A bug: why does this bug exist → why can this state occur → why does this
+  module need to know about this?
+- Performance: why is this slow → why does it happen this many times → why
+  does this data have to appear here?
+- A request: they want this feature → what do they need it to accomplish →
+  what was supposed to accomplish that thing?
 
-追问到那一层就停。**判据是「在这里改，能让一整类问题一起消失」**，
-不是「还能继续往上问」——上溯是没有尽头的，
-再往上会走到「重写整个系统」和「换个赛道」，那不是解决问题。
+Stop at that level. **The criterion is "changing it here makes a whole class
+of problems disappear together"**, not "I can still keep asking upward" —
+tracing upward has no end, and further up you reach "rewrite the whole
+system" and "switch industries", which is not solving the problem.
 
-## 这条规范不是什么
+## What this rule is not
 
-- **不是不许先止血。**
-  线上炸了当然先恢复。但要清楚**止血不等于解决**：
-  临时补丁要标出来，根因要记下来，然后回来处理。
-  最糟的情况是止血成功，于是没人再回头看。
-- **不是无限上溯。**
-  见上面的停止判据。深挖是为了找到能一次性解决问题的那一层，
-  不是为了证明一切都得重做。
-- **不是否定用户反馈。**
-  用户看到的现象必须当真；只是不能把他提的解法当成需求本身。
+- **It does not forbid stopping the bleeding first.**
+  If production is on fire, restore it first, of course. But be clear that
+  **stopping the bleeding is not solving it**: mark the temporary patch,
+  record the root cause, and come back to it. The worst case is that the
+  bleeding stops successfully, so nobody ever looks again.
+- **It is not infinite ascent.**
+  See the stopping criterion above. Digging is for finding the level that
+  solves the problem in one move, not for proving that everything has to be
+  redone.
+- **It does not dismiss user feedback.**
+  The phenomenon the user sees must be taken as real. What you cannot do is
+  treat the solution they proposed as the request itself.

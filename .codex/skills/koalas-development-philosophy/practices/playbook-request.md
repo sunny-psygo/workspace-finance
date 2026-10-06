@@ -1,64 +1,84 @@
-# Playbook：来了一个需求
+# Playbook: a request arrives
 
-需求可能来自用户反馈、内部想法、线上问题——**对你来说都一样**，
-因为提需求的人通常已经把它翻译成了一个解法，
-而**这一步翻译是整个链条上信息损失最大的地方**。
+A request may come from user feedback, an internal idea, or a production
+problem — **for you they are all the same**, because the person raising the
+request has usually already translated it into a solution, and **that
+translation is where the chain loses the most information**.
 
-所以第一件事永远是把它翻译回去。
+So the first thing is always to translate it back.
 
-## 步骤
+## Steps
 
-1. **把「现象」和「解法」分开。**
-   现象一定当真；解法只是一个候选。
-   提需求的人（无论是用户还是研发）只能基于自己看到的那一块提方案
-   （见[认知](../principles/cognition.md)和[要有主见](../principles/have-a-view.md)：
-   他说的、他想要的、真正的解法，常常是三个不同的东西）。
+1. **Separate the "phenomenon" from the "solution".**
+   The phenomenon is always taken as real; the solution is only a candidate.
+   The person raising the request (whether a user or an engineer) can only
+   propose from the piece they themselves can see (see
+   [cognition](../principles/cognition.md) and
+   [have a view](../principles/have-a-view.md): what they said, what they
+   want, and the real solution are often three different things).
 
-2. **往上挖目的：他到底要完成什么？为什么现在完不成？**
-   是做不到，是不知道能做到，还是做起来太别扭？这三种的解法完全不同。
-   挖到「在这一层解决，一整类同样的请求都不会再出现」为止
-   （见[深挖本质问题](../principles/dig-to-the-root.md)）。
+2. **Dig upward for the purpose: what are they actually trying to accomplish?
+   Why can't they accomplish it now?**
+   Is it that they can't do it, that they don't know they can, or that doing
+   it is too awkward? The solutions to these three are entirely different.
+   Dig until "solving it at this level means a whole class of the same
+   requests will never appear again" (see
+   [dig to the root](../principles/dig-to-the-root.md)).
 
-3. **找共性：这个需求和已有的哪些需求其实是同一件事？**
-   共性不在需求那一层，在定义那一层。
-   反复出现、或者很多人用不同说法提到的同一件事，最值得往上追。
+3. **Find the commonality: which existing requests is this one actually the
+   same thing as?** The commonality is not at the level of the request. It is
+   at the level of the definition. Something that recurs, or that many people
+   mention in different words, is the most worth tracing upward.
 
-4. **先试着不加代码。**
-   动手前先确认这个需求预设的限制是真的
-   （见[先确认那个限制是真的](verify-the-constraint.md)）——
-   很多「只能这么绕」其实是没查过。然后按这个顺序找：
-   能不能**去掉一个限制**就满足了？
-   能不能让已有的那个东西**更通用一点**就覆盖掉？
-   能不能**删掉某个特例**，让它自然成立？
-   加一个新功能、新开关、新设置项，是最后的选择——
-   每加一个入口，其他所有入口都更难找。
+4. **First try to add no code.**
+   Before starting, confirm that the constraint this request presupposes is
+   real (see
+   [first confirm the constraint is real](verify-the-constraint.md)) — a lot
+   of "this is the only way around it" was never checked. And don't stare
+   only at the product layer itself: can something the user already has in
+   hand (a general agent especially) take this over? (See
+   [the three boundaries](../domain-mindsets/three-boundaries.md).)
+   Then look in this order: can it be satisfied by **removing one
+   constraint**? Can it be covered by making the existing thing **a bit more
+   general**? Can it hold naturally by **deleting some special case**? Adding
+   a new feature, a new switch, a new setting is the last choice — every
+   entry point you add makes every other entry point harder to find.
 
-5. **比较方案时，看的是仓库的总代码量，不是这个改动的大小。**
-   一个改动写了三百行、但删掉了五百行，比只写五十行的那个方案好。
-   **好方案常常让总量持平甚至下降**；
-   如果每个需求都让总量上涨，这个仓库注定会长成屎山。
+5. **When comparing options, look at the repo's total amount of code, not the
+   size of this change.** A change that writes three hundred lines but
+   deletes five hundred is better than the option that only writes fifty.
+   **A good option often leaves the total flat or even lower.** If every
+   request raises the total, this repo is destined to grow into a pile of
+   mud.
 
-6. **确实要加，就先把三句话说清楚**，再动手：
-   它**是什么**（不许同义反复）、它**取代或吸收了什么**
-   （见[新增之前先说清取代了什么](replace-dont-accumulate.md)）、
-   它**不负责什么**。
+6. **If you really do have to add, get three sentences clear first**, then
+   start: what it **is** (no tautologies), what it **replaces or absorbs**
+   (see [before adding, say what it replaces](replace-dont-accumulate.md)),
+   and what it **is not responsible for**.
 
-7. **回头看一眼：这个方案让整体变简单了还是变复杂了？**
-   用户要因此多学一个概念吗？开发者要多记一条规矩吗？
-   **如果结论是「得教用户怎么用」，那就是设计还没做完。**
-   如果变复杂了，回到第 3 步——**这一步是整个 playbook 的重点**。
+7. **Look back once: did this option make the whole simpler or more
+   complex?** Does the user have to learn one more concept because of it?
+   Does the developer have to remember one more rule? **If the conclusion is
+   "we'll have to teach the user how to use it", the design isn't finished.**
+   If it got more complex, go back to step 3 — **this step is the point of
+   the whole playbook**.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **会拖慢明确又紧急的小需求。**
-  所以只有**会引入新概念**的需求才走全程：
-  新增文件、新增模块或类型、给已有的东西加上它原本没有的职责、
-  改到别人依赖的接口。改文案、调参数、修实现细节，直接做。
-  判据是**是否引入新概念，不是行数**——
-  把一个大改动拆成五个小改动，不会让它变成小需求。
-- **挖目的不是否决权。**
-  找不到更通用的解法时，就老实按提需求的人说的做。
-  「先想想能不能不加」是一道必答题，不是一个否定需求的许可。
-- **总代码量是判据，不是 KPI。**
-  为了让数字好看而把代码压成天书，或者删掉真正需要的东西，
-  都比多写几行糟糕得多。
+- **It slows down small requests that are clear and urgent.**
+  So only requests that **introduce a new concept** walk the whole path: a
+  new file, a new module or type, giving an existing thing a responsibility
+  it didn't have, changing an interface other people depend on. Copy edits,
+  parameter tweaks, and fixes to implementation details — just do them. The
+  criterion is **whether it introduces a new concept, not the line count** —
+  splitting one large change into five small ones doesn't turn it into a
+  small request.
+- **Digging for the purpose is not a veto.**
+  When you can't find a more general solution, honestly do what the person
+  who raised the request said. "First think about whether we can avoid
+  adding" is a question that must be answered, not a license to reject the
+  request.
+- **Total code volume is a criterion, not a KPI.**
+  Compressing code into something unreadable to make the number look good, or
+  deleting something that is genuinely needed, is far worse than writing a
+  few more lines.

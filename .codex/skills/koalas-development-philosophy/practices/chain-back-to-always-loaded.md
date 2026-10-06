@@ -1,48 +1,65 @@
-# 一切都要链回常驻文件
+# Everything chains back to the always-loaded file
 
-**你希望 AI 注意到的每一样东西，顺着指针往上走，
-最终都必须能走到 `AGENTS.md` 或 `CLAUDE.md`。**
+**Everything you want the AI to notice, followed upward along the pointers,
+must eventually be able to reach `AGENTS.md` or `CLAUDE.md`.**
 
-已知的机制里，**只有这两个文件是保证 always loaded 的**
-（Codex 读 `AGENTS.md`，Claude Code 读 `CLAUDE.md`；
-skill 只有 `description` 常驻，正文要被调用才读得到）。
-链不回这两个文件的东西，就没有任何机制保证它会被看见。
+Among known mechanisms, **only these two files are guaranteed always loaded**
+(Codex reads `AGENTS.md`, Claude Code reads `CLAUDE.md`; a skill has only its
+`description` resident, and the body is read only when it is invoked).
+Something that doesn't chain back to these two files has no mechanism
+guaranteeing it will be seen.
 
-## 怎么做
+**Things in the repo chain back to the repo's copy.** The user-level
+`~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` are always loaded too, but they
+take effect only on the machine where they were installed — hanging the
+repo's things there means only you can see them. Conversely, **the repo's
+always-loaded file must not contain machine-local paths**: it goes into git,
+and an `@` import pointing at `~/` is a silently dead chain for coworkers and
+for CI.
 
-- **新增一份 `design/` 文档、一个 skill、一条约定、一个目录——
-  当场问一句：从常驻文件出发，能不能走到它？** 走不到，现在就补上那一环。
-- **不必直接链。** 中间可以隔层：
-  `AGENTS.md` → `design/README.md` → `design/xxx.md`。
-  但**每一环都要有一句描述**，让人和 AI 有动机往下走
-  （见[AI coding 的注意力](../domain-mindsets/attention.md)）。
-- **链回哪个文件，看这个仓库用什么 agent**：两个都用时，
-  内容放 `AGENTS.md`，`CLAUDE.md` 软链接过去，一份内容两边都读得到。
-- **自检**：搜一下这个文件名在仓库里被谁提到过。
-  只有它自己提到自己，它就是个孤儿。
+## How to do it
 
-## 效果
+- **A new document in `design/`, a new skill, a new convention, a new
+  directory — ask on the spot: starting from the always-loaded file, can you
+  walk to it?** If you can't, add that link now.
+- **It doesn't have to link directly.** There can be layers in between:
+  `AGENTS.md` → `design/README.md` → `design/xxx.md`. But **every link needs
+  one sentence of description**, so the person and the AI have a motive to
+  walk on (see [attention in AI coding](../domain-mindsets/attention.md)).
+- **Which file to chain back to depends on which agent this repo uses**: when
+  both are used, the content goes in `AGENTS.md` and `CLAUDE.md` is a symlink
+  to it, so one body of content is read by both sides.
+- **Self-check**: search for where this file's name is mentioned in the repo.
+  If only it mentions itself, it is an orphan.
 
-写完不挂上去，等于没写——**而且比没写更糟，因为你以为它在起作用**。
+## Effect
 
-这条把「要不要写」和「写完要不要挂上去」拆成了两件事。
-第一件事人人都记得，第二件事几乎没人记得。
+Writing it and not hanging it up is the same as not writing it — **and worse
+than not writing it, because you believe it is doing its job**.
 
-## 反效果与边界
+This splits "should it be written" and "once written, should it be hung up"
+into two things. Everyone remembers the first. Almost nobody remembers the
+second.
 
-- **不是所有东西都要链。** 只链**你希望 AI 主动注意到**的。
-  但要分清两种「不用链」的东西：
-  **历史遗留、没人用的临时脚本根本不该留在仓库里**——
-  该做的是删掉它，而不是给它挂一句「这个不用看」
-  （见[仓库是什么](../principles/what-is-a-repo.md)：
-  任何时刻只留 earned its place 的东西，历史交给 git）。
-  构建产物、vendored 的第三方代码确实要长期存在，
-  那就用 `.gitignore` 和目录约定把它们隔开。
-- **常驻文件不是目录树。**
-  它是**起点**，不是索引：一级指针只放少数几个，
-  深的东西靠中间层带过去。什么都往里塞，等于什么都注意不到。
-- **链太长也会断。** 每多一环，走到的概率就降一次。
-  越重要的东西，链要越短——最重要的那些，干脆直接写在常驻文件里。
+## Counter-effects and boundaries
 
-出自[AI coding 的注意力](../domain-mindsets/attention.md)和
-[仓库是什么](../principles/what-is-a-repo.md)。
+- **Not everything has to be chained.** Chain only **what you want the AI to
+  notice on its own**. But distinguish two kinds of "doesn't need chaining":
+  **historical leftovers and temporary scripts nobody uses should not be in
+  the repo at all** — what to do is delete them, not hang a sentence of
+  "don't look at this" on them (see
+  [what a repo is](../principles/what-is-a-repo.md): at any moment keep only
+  what has earned its place, and leave history to git). Build artifacts and
+  vendored third-party code do have to exist long-term, so separate them with
+  `.gitignore` and directory conventions.
+- **The always-loaded file is not a directory tree.**
+  It is a **starting point**, not an index: only a few pointers at the first
+  level, and deep things are carried there by the middle layers. Stuffing
+  everything in means nothing gets noticed.
+- **A chain that is too long breaks too.** Every extra link lowers the
+  probability of arriving. The more important the thing, the shorter the
+  chain — the most important ones are simply written directly into the
+  always-loaded file.
+
+From [attention in AI coding](../domain-mindsets/attention.md) and
+[what a repo is](../principles/what-is-a-repo.md).

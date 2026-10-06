@@ -1,34 +1,46 @@
-# 新增之前，先说清它取代了什么
+# Before adding, say what it replaces
 
-**每次新增一个能力，都要能回答：它取代了什么？**
-如果答案是「什么都没取代」，先确认这件事真的还没有人做过。
+**Every time you add a capability, you have to be able to answer: what does
+it replace?** If the answer is "it replaces nothing", first confirm that
+nobody is already doing this thing.
 
-## 怎么做
+## How to do it
 
-- 新增前先搜一遍：这个仓库里有没有已经在干同一件事的东西？
-- 有，就**改它**，或者**用新的替掉旧的并把旧的删掉**——不要并排放两个。
-- 确实需要新旧并存（比如要灰度、要迁移数据），**并存必须带截止条件**：
-  写清楚「什么条件满足时删掉旧的」，并且这个条件要是可判定的
-  （「所有用户数据迁移完成后」可以，「等以后稳定了」不行）。
+- Before adding, search once: is there already something in this repo doing
+  the same thing?
+- If there is, **change it**, or **replace the old one with the new one and
+  delete the old one** — don't leave two side by side.
+- When the old and the new genuinely need to coexist (a gradual rollout, a
+  data migration, say), **coexistence must come with an end condition**:
+  write down "the old one is deleted when this condition is met", and the
+  condition has to be decidable ("after all user data has been migrated"
+  works; "once things stabilize later" does not).
 
-## 效果
+## Effect
 
-同类能力并存是臃肿最主要的来源，而且每一次并存**当时看都很合理**：
-旧的不敢动，新的更好用，于是两个都留着。
-留到第三个的时候，没人知道该用哪个，也没人敢删任何一个。
+Coexisting capabilities of the same kind are the main source of bloat, and
+every instance of coexistence **looks perfectly reasonable at the time**: the
+old one is too scary to touch, the new one is better to use, so both stay.
+By the time there is a third, nobody knows which to use, and nobody dares to
+delete any of them.
 
-把「取代了什么」变成新增时刻的必答题，是在这条路的入口设卡，
-而不是等长成了再去清理——清理永远排不上优先级。
+Making "what does it replace" a question that must be answered at the moment
+of adding sets a checkpoint at the entrance of that road, rather than waiting
+to clean up after it has grown — cleanup never makes it to the top of the
+priority list.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **最大的风险是被用来强行统一两个其实不同的东西。**
-  错误的抽象比重复贵得多。判据是**它们解决的是不是同一个问题**，
-  不是「看起来像不像」。
-- **拿不准的时候，允许并存**——但必须写下截止条件。
-  「暂时并存」本身没问题，「无限期并存」才是问题。
-- **不适用于外部依赖的过渡期**：受制于别人的节奏时，
-  截止条件写成对方的里程碑，不要硬定日期。
+- **The biggest risk is it being used to forcibly unify two things that are
+  actually different.** A wrong abstraction is far more expensive than
+  duplication. The criterion is **whether they solve the same problem**, not
+  "whether they look alike".
+- **When you aren't sure, coexistence is allowed** — but the end condition
+  must be written down. "Coexist for now" is fine in itself. "Coexist
+  indefinitely" is the problem.
+- **It doesn't apply to the transition period of an external dependency**:
+  when you're bound by someone else's pace, write the end condition as their
+  milestone, not as a date you force.
 
-出自[极简主义](../principles/minimalism.md)和
-[代码是什么](../principles/what-is-code.md)。
+From [minimalism](../principles/minimalism.md) and
+[what code is](../principles/what-is-code.md).

@@ -1,35 +1,51 @@
-# 缺了就问，别猜
+# If something is missing, ask. Don't guess
 
-**缺上下文、缺认知、缺定位的时候，主动问，不要猜着往下写。**
+**When context, cognition, or positioning is missing, ask. Don't guess and
+keep writing.**
 
-## 先分清缺的是哪一类
+## First distinguish which kind is missing
 
-| 缺什么 | 例子 | 怎么办 |
+| What's missing | Example | What to do |
 | --- | --- | --- |
-| **上下文**（事实） | 这个模块谁在用？这个字段哪来的？ | **先自己查**：读调用方、读提交历史、读 issue。查不到再问。 |
-| **认知**（这东西是什么） | 这个系统的边界在哪？这个概念到底指什么？ | **直接问**——它在人的脑子里，代码里没有。 |
-| **定位**（该做到什么程度） | 给谁用？活多久？内部工具还是对外产品？ | **必须问**——它决定取舍标准（见[实事求是](../principles/seek-truth-from-facts.md)）。 |
+| **Context** (facts) | Who uses this module? Where does this field come from? | **Look it up yourself first**: read the callers, the commit history, the issues. Ask only when you can't find it. |
+| **Cognition** (what this thing is) | Where is this system's boundary? What does this concept actually refer to? | **Ask directly** — it lives in a person's head, not in the code. |
+| **Positioning** (how far this should go) | Who is it for? How long does it live? Internal tool or external product? | **You must ask** — it decides the standard for the tradeoff (see [seek truth from facts](../principles/seek-truth-from-facts.md)). |
 
-## 怎么问
+## How to ask
 
-- **带着你的猜测去问。**
-  「我理解这个是给内部用的、活不过三个月，所以我打算不做向后兼容——对吗？」
-  比「你想怎么做？」有用得多——后者是把认知负担又推回给人。
-- **一次问清楚，别挤牙膏。** 把问题列出来，标出哪个最影响方案。
-- **给出默认答案再问。**
-  「如果没有特别说明，我会按 X 做」——这样对方即使一时没空回，你也不会卡住。
+- **Ask carrying your guess.**
+  "I understand this is for internal use and won't live past three months, so
+  I plan to skip backward compatibility — right?" is far more useful than
+  "how do you want this done?" — the latter pushes the cognitive burden back
+  onto the person.
+- **Ask it all at once. Don't extract it drop by drop.** List the questions,
+  and mark which one affects the plan the most.
+- **Give a default answer, then ask.**
+  "Unless told otherwise, I'll do X" — so even if the other person has no
+  time to reply just now, you aren't stuck.
+- **Make the question decidable.** Define each term, and show what each
+  option means in one small worked example from the real system, what it
+  costs, and why it has to be settled now. "Pull complete, push hint?" got an answer in Match, and a day later
+  the owner asked what it meant. **An answer given without understanding is
+  not a decision**: when you find one, re-explain and re-ask.
 
-## 效果
+## Effect
 
-猜错的成本是一整段错位的实现，而且它看起来很自洽，不会有人立刻发现；
-问一句的成本是一分钟。这个比价在任何时候都成立。
+The cost of guessing wrong is a whole stretch of misaligned implementation,
+and it looks self-consistent, so nobody notices immediately. The cost of
+asking is one minute. This price comparison holds at any time.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **问得太多，就是把思考外包给人**，那是另一种不负责任。
-  **能自己查到的必须自己查**；值得问的是「只有人脑子里才有」的东西。
-- **别让提问变成阻塞。** 给出默认方案继续往前推，
-  同时把问题显式标出来，而不是停在那里等。
-- **救火的时候不问**，先恢复；追问留到止血之后。
+- **Asking too much is outsourcing the thinking to the person**, which is
+  another kind of irresponsibility. **What you can look up yourself, you must
+  look up yourself.** What is worth asking is what "exists only in a person's
+  head".
+- **Don't let the question become a block.** Give a default plan and keep
+  moving, while marking the question explicitly, rather than stopping there
+  to wait.
+- **Don't ask while firefighting.** Restore first; the questioning waits
+  until after the bleeding has stopped.
 
-出自[认知](../principles/cognition.md)和[要有主见](../principles/have-a-view.md)。
+From [cognition](../principles/cognition.md) and
+[have a view](../principles/have-a-view.md).

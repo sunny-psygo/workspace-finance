@@ -1,57 +1,79 @@
-# 讲理由，不只讲规矩
+# Give the rationale, not just the rule
 
-**规矩离开理由就会失效。**
-任何一条规定都要连着它想解决的问题一起交付：不是「要这么做」，而是「因为会出这个问题，所以这么做」。
+**A rule detached from its rationale stops working.**
+Every rule has to be delivered together with the problem it is trying to
+solve: not "do it this way", but "because this problem would otherwise
+happen, do it this way".
 
-对应地，读的人要**读意图，而不是读条文**（read the intentions, not the rules）。
+Correspondingly, the reader has to **read the intention, not the text**
+(read the intentions, not the rules).
 
-## 为什么
+## Why
 
-1. **条文一定会被现实绕过去。**
-   规定是有限的，情况是无限的。碰到没被覆盖的场合，只有理由能用来外推；
-   只记住字面的人和 agent，此时要么僵住，要么照字面做出荒唐的事。
+1. **The text will always be outflanked by reality.**
+   Rules are finite and situations are infinite. In a case the text doesn't
+   cover, only the rationale can be extrapolated from. A person or an agent
+   who memorized only the letter either freezes or does something absurd by
+   following the letter.
 
-2. **没有理由的条文会被形式化执行。**
-   「必须写测试」于是有了断言 `assert True` 的测试。
-   动作被复制了，效果没有。理由才是验收标准。
+2. **A rule without a rationale gets executed formally.**
+   "Tests are mandatory" then produces tests that assert `assert True`.
+   The motion was copied; the effect was not. The rationale is the
+   acceptance criterion.
 
-3. **人需要理由才会真的认同。**
-   不认同的规矩不会消失，只会转入地下——被绕过、被应付、被私下吐槽。
-   讲清楚为什么，是让规矩真正生效的唯一便宜办法。
+3. **People need a rationale before they actually agree.**
+   A rule they don't agree with doesn't disappear. It goes underground —
+   bypassed, complied with on paper, complained about in private. Explaining
+   why is the only cheap way to make a rule actually take effect.
 
-4. **没有理由的条文永远删不掉。**
-   谁也不知道它当年在防什么，于是谁都不敢动，规范只增不减，
-   最后厚到没人读（见 [minimalism](minimalism.md)）。
-   写下理由，等于给这条规矩附上了它的失效条件：
-   当那个问题不存在了，就可以理直气壮地删掉它。
+4. **A rule without a rationale can never be deleted.**
+   Nobody knows what it was guarding against back then, so nobody dares to
+   touch it. The rules only ever grow, until they are too thick for anyone
+   to read (see [minimalism](minimalism.md)). Writing down the rationale
+   attaches the rule's expiry condition: when that problem no longer exists,
+   you can delete the rule with a clear conscience.
 
-5. **AI 更需要理由。**
-   agent 擅长照条文办事，恰恰因此更容易在条文的边界外办错事。
-   理由是让它正确外推的唯一输入。
+5. **AI needs the rationale even more.**
+   An agent is good at following the text, and exactly because of that it is
+   more likely to do the wrong thing outside the text's boundary. The
+   rationale is the only input that lets it extrapolate correctly.
 
-## 怎么做
+## How to do it
 
-- **每条规定后面跟一句「因为……」。** 一句话就够，讲清它拦住的是什么失败。
-- **写它想防的具体场景，而不是抽象美德。**
-  「保持代码可维护」不是理由，「改一处要同步改三处，迟早漏一处」才是。
-- **明确说出这是建议还是硬约束**，以及例外长什么样。
-  绝大多数规定是建议；真正的硬约束（安全、合规、数据不可恢复）要单独标出来，
-  这样它才不会淹没在建议里。
-- **保留推导，不要只留结论。** 结论会过期，推导过程能让后来的人重新判断。
-- **决策也一样。** commit message、code review 意见、技术选型记录，
-  写清为什么这么选，而不只是选了什么。
+- **Follow every rule with one sentence of "because…".** One sentence is
+  enough, stating the failure it blocks.
+- **Write the concrete situation it is trying to prevent, not an abstract
+  virtue.** "Keep the code maintainable" is not a rationale. "Changing one
+  place means changing three others in sync, and one of them will eventually
+  be missed" is.
+- **Say explicitly whether this is advice or a hard constraint**, and what
+  an exception looks like. Most rules are advice. Real hard constraints
+  (safety, compliance, data that cannot be recovered) should be marked
+  separately, so they don't drown among the advice.
+- **Keep the derivation, not only the conclusion.** Conclusions expire; the
+  derivation lets a later person judge again.
+- **Decisions too.** Commit messages, code review comments, and technology
+  choice records should say why this was chosen, not only what was chosen.
 
-## 遇到不合理的规定时
+## When you meet an unreasonable rule
 
-1. 先找它的理由——包括没写下来的。看不出一条规矩在防什么，通常是自己还没看全。
-2. **规定和它自己的意图冲突时，按意图做**，然后回头把规定改对。
-3. 不要默默绕过。绕过一次，这条规定对所有人就都松了一格，而且没人知道。
+1. Find its rationale first — including the one that was never written down.
+   If you can't see what a rule is guarding against, you usually haven't
+   seen the whole of it yet.
+2. **When a rule conflicts with its own intention, follow the intention**,
+   then go back and fix the rule.
+3. Don't bypass it silently. Bypass it once and the rule loosens one notch
+   for everyone, and nobody knows.
 
-## 这条规范不是什么
+## What this rule is not
 
-- **不是要为每句话写长篇论证。** 理由要一句话说得清；说不清，
-  通常说明这条规定本身还没想明白。
-- **不是「有理由就可以随便违反」。** 读意图是为了在条文没覆盖时做对，
-  不是为了给不想遵守找借口。判断的门槛是：你能说清按意图做为什么更好，
-  并且愿意把这个判断写下来。
-- **不是把决定权无限下放。** 安全、合规、不可恢复的操作，照做，事后再讨论。
+- **It does not ask for a long argument under every sentence.** A rationale
+  should be sayable in one sentence. If it isn't, the rule itself usually
+  hasn't been thought through.
+- **It is not "a rationale means you may violate it freely".** Reading the
+  intention is for getting it right where the text doesn't cover, not for
+  finding an excuse to avoid complying. The bar for the judgment is: you can
+  say why following the intention is better, and you are willing to write
+  that judgment down.
+- **It does not delegate authority without limit.** For safety, compliance,
+  and irreversible operations, do as told and discuss afterward.

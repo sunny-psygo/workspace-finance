@@ -1,27 +1,33 @@
-# 文档、测试、实现改在同一个提交里
+# Change the docs, the tests, and the implementation in the same commit
 
-**改实现的那个提交里，就把它的 docstring 和测试一起改掉。**
+**In the commit that changes the implementation, change its docstring and its
+tests along with it.**
 
-## 怎么做
+## How to do it
 
-- 不新开一份和代码平行的 API 文档；描述写进 docstring。
-- 测试放在离被测代码尽量近的地方。
-- 一个改动如果让文档或测试过期了，**这个提交就还没完成**。
+- Don't open a new API document parallel to the code; write the description
+  into the docstring.
+- Put tests as close as possible to the code they test.
+- If a change makes the docs or the tests stale, **the commit isn't finished
+  yet**.
 
-## 效果
+## Effect
 
-把「记得去更新另一个目录」变成「不可能看不见」。
-你可以忘掉隔壁目录里的文档，但很难对紧挨着的三行 docstring 视而不见。
+It turns "remember to update the other directory" into "impossible not to
+see". You can forget the document in the neighboring directory, but it is
+hard to fail to see the three lines of docstring right next to the code.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-对**上下文、设计哲学**这类描述不适用——它们本来就和实现结构对不上，
-硬塞进 docstring 只会让两边都难读，那类东西该单独成册
-（见[文档与规范](../domain-mindsets/documentation.md)）。
+It doesn't apply to descriptions of **context and design philosophy** — they
+don't correspond to the implementation's structure in the first place, and
+forcing them into a docstring makes both sides hard to read. That kind of
+thing should be its own volume (see
+[documentation](../domain-mindsets/documentation.md)).
 
-另外别把它变成「每个改动都必须配一个测试」：
-该不该有测试是[另一个判断](../domain-mindsets/testing.md)，
-这条只管「已经存在的描述和测试不许过期」。
+Also, don't turn it into "every change must come with a test": whether there
+should be a test is [a separate judgment](../domain-mindsets/testing.md).
+This one only governs "existing descriptions and tests must not go stale".
 
-出自[文档与规范](../domain-mindsets/documentation.md)和
-[测试](../domain-mindsets/testing.md)。
+From [documentation](../domain-mindsets/documentation.md) and
+[testing](../domain-mindsets/testing.md).

@@ -1,146 +1,188 @@
-# 极简主义
+# Minimalism
 
-**能完整解决问题的最小方案，就是最好的方案。**
-每一行代码、每一个文件、依赖、配置项和抽象，都必须靠「解决一个当下真实存在的问题」
-来换取自己存在的资格。
+**The smallest solution that fully solves the problem is the best solution.**
+Every line of code, every file, dependency, config option, and abstraction
+must earn its existence by solving a problem that is real right now.
 
-**这不只是关于代码。** 文档、规范、流程、策略同样是要维护的东西，
-同样会过期、会自相矛盾、会被绕过，因此适用同一套标准。
-**产品本身更是如此**：功能堆得越多，用户越不会用。
-展开见[产品与交互设计](../domain-mindsets/product-design.md)
-和[文档与规范](../domain-mindsets/documentation.md)。
+**This is not only about code.** Docs, rules, processes, and policies are
+things you have to maintain too. They go stale, contradict themselves, and
+get bypassed, so the same standard applies.
+**The product itself even more so**: the more features you pile on, the less
+people use them.
+See [product and interaction design](../domain-mindsets/product-design.md)
+and [documentation](../domain-mindsets/documentation.md).
 
-极简主义不是写得比问题需要的更少，而是拒绝写问题不需要的东西。
+Minimalism is not writing less than the problem needs. It is refusing to
+write what the problem does not need.
 
-## 为什么
+## Why
 
-**因为[代码是手段，也是负债](what-is-code.md)**——
-能解决问题的能力才是资产，代码只是获得它的代价，
-而且这笔负债要一直付利息：理解成本、出错面、修改成本。
-既然如此，买到同样的能力，当然是付得越少越好。
+**Because [code is a means, and a liability](what-is-code.md)** —
+the ability to solve the problem is the asset; code is only the price of
+getting it. And that liability keeps paying interest: cost of understanding,
+surface area for bugs, cost of change.
+Given that, buying the same ability means paying as little as possible.
 
-文字类的东西还多欠一笔：**没人读的规范比没有规范更糟。**
-篇幅一旦超过愿意读的长度，真正重要的那几条就跟着一起被跳过了。
+Prose owes one more debt: **a rule nobody reads is worse than no rule.**
+Once the length exceeds what anyone will read, the few lines that actually
+matter get skipped along with the rest.
 
-**下面的条目都是这个道理的推论，不是检查表。**
-当某一条和「用最小代价买到能力」这个意图冲突时，按意图走。
+**Everything below is a corollary of that, not a checklist.**
+When some item conflicts with the intent — buy the ability at the smallest
+price — follow the intent.
 
-## 两种退化模式
+## Two modes of decay
 
-一个干净的代码库，退化成谁也不敢动的系统，底层只有两种模式：
+A clean codebase decays into a system nobody dares to touch through exactly
+two patterns:
 
-1. **Features before necessity——需求还不存在，功能先上。**
-   为「以后可能用到」「万一呢」「要做到生产级」「功能得完备」而写的东西，
-   构成了代码库里绝大多数没人用、也没人敢删的部分。
+1. **Features before necessity — the need does not exist yet, the feature
+   ships anyway.**
+   Things written for "we might need it later", "just in case", "it has to
+   be production-grade", "the feature set must be complete" make up most of
+   what nobody uses and nobody dares to delete.
 
-2. **Build too literally——只盯着眼前，缺什么补什么。**
-   每个需求都当成孤立的一件事：来一个加一段，来一个加一个 if。
-   单看每一次改动都「最小」、都无可指摘，但需求之间的共性从没被提炼出来，
-   于是重复、特例和分支不断堆积，写得越多越像屎山。
-   它的病根是**需求驱动**：需求本身是零散、互不相关的，
-   照着一条条实现，得到的当然也是一堆互不相关的东西
-   （见 [事前设计优于事后救火](upfront-design.md)）。
+2. **Build too literally — stare only at what is in front of you, and patch
+   whatever is missing.**
+   Each request is treated as an isolated thing: one arrives, you add a
+   block; another arrives, you add an if. Every single change looks
+   "minimal" and unobjectionable, but the commonality across requests is
+   never extracted, so duplication, special cases, and branches keep piling
+   up. The more you write, the more it looks like a pile of mud.
+   The root is **demand-driven development**: requests are scattered and
+   unrelated, and implementing them one by one produces a pile of unrelated
+   things (see [upfront design beats firefighting](upfront-design.md)).
 
-第二种更隐蔽，而且**特别容易拿极简主义当挡箭牌**：
-「我只做了眼前需要的」不是免罪符——
-一堆各自最小的局部改动，加起来完全可以是一个极其臃肿的整体。
+The second is stealthier, and **it is especially easy to hide behind
+minimalism**: "I only did what was needed right now" is not a defense —
+a pile of locally minimal changes can add up to a grossly bloated whole.
 
-## 外推是为了做减法
+## Extrapolate in order to subtract
 
-所以做开发一定要有通用的、长远的眼光：
-**即使是很具体的需求，也要往上外推一层，去找那个简洁、优雅、通用的设计。**
+So development needs a general, long view:
+**even a very specific request should be pushed one level up, to find the
+simple, elegant, general design.**
 
-关键在外推的方向，这是本条规范最容易被搞反的地方：
+The direction of that extrapolation is where this rule gets reversed most
+often:
 
-- **外推不是为了做加法。**
-  不是借「通用性」的名义去加健壮性、加生产级、加功能完备、加配置项、加扩展点。
-  那恰恰就是第一种退化模式，只是换了个体面的说法。
-- **外推是为了做减法。**
-  找共性是为了让十个特例塌缩成一条规则，让十段相似的代码变成一段，让三个分支消失。
-  **外推之后代码应该变少。如果变多了，说明找到的不是共性，是借口**——
-  这也是判断自己有没有走偏的现成尺子。
-- **做减法自然就给未来留出了口子。**
-  通用本身就意味着可扩展：真正抓住问题本质的设计，下一个需求往往根本不用改它。
-  这是主动猜未来、预埋扩展点换不来的——猜错了是浪费，猜对了也早就在付利息。
+- **Extrapolation is not for adding.**
+  It is not an excuse to add robustness, production-grade hardening, feature
+  completeness, config options, or extension points in the name of
+  "generality". That is exactly the first mode of decay, dressed up.
+- **Extrapolation is for subtracting.**
+  Finding the commonality is how ten special cases collapse into one rule,
+  ten similar blocks become one, and three branches disappear.
+  **After extrapolating, there should be less code. If there is more, what
+  you found is not a commonality, it is an excuse** — and that is a ready-made
+  ruler for noticing you have drifted.
+- **Subtracting is what leaves room for the future.**
+  Being general is itself what makes something extensible: a design that
+  actually catches the essence of the problem often needs no change at all
+  for the next request. Guessing the future and pre-building extension
+  points cannot buy this — guessing wrong is waste, and guessing right means
+  you have been paying interest the whole time.
 
-外推要往哪儿推？往「**这东西到底是什么**」推。
-共性不在需求那一层，在定义那一层——
-把「PPT 是一组图片」想明白，胜过为 PPT 生成流程加十个环节。
-这正是 [事前设计优于事后救火](upfront-design.md) 讲的事：
-**极简是结果，想清楚抽象是原因。**
+Where do you extrapolate toward? Toward **what this thing actually is**.
+The commonality is not at the level of the request; it is at the level of
+the definition. Seeing that "a slide deck is a set of images" beats adding
+ten stages to a slide-generation pipeline.
+That is exactly what [upfront design beats firefighting](upfront-design.md)
+is about: **minimalism is the result; getting the abstraction right is the
+cause.**
 
-**一天写一万行代码、上一百个功能，不是本事。**
-真正的本事是花半天想清楚设计，再花半天用一百行、十个功能，
-干掉那一万行、一百个功能要干的事。
+**Writing ten thousand lines and shipping a hundred features in a day is not
+skill.** The skill is spending half a day getting the design right, then
+half a day using a hundred lines and ten features to do what those ten
+thousand lines and a hundred features were going to do.
 
-## 具体主张
+## Concrete claims
 
-1. **只解决被提出的问题，不解决它旁边的问题。**
-   「以后可能会用到」是浪费的最大来源。
-   注意这说的是**不做旁边的功能**，不是不去想旁边的结构：
-   该想的照想，想完了往往是写得更少，而不是更多。
-   **要推迟的是功能和扩展点，不是抽象。**
-   抽象必须一开始就想清楚——它推迟不了，事后返工的代价高得多。
+1. **Solve only the problem that was raised, not the ones beside it.**
+   "We might need it later" is the largest source of waste.
+   This means **don't build the neighboring features**, not "don't think
+   about the neighboring structure": think as much as you should, and
+   thinking it through usually means writing less, not more.
+   **What you defer is features and extension points, not the abstraction.**
+   The abstraction has to be thought through at the start — it cannot be
+   deferred, and reworking it later costs far more.
 
-2. **没有两个真实使用者，就不要引入新概念。**
-   只有一个调用点的基类、接口、工具模块或配置开关不是抽象，是绕路：
-   它增加了一层要理解的东西，却没有换来任何复用。
-   这和上一节的「找共性」不矛盾，区别只看增删：
-   合并已有的重复让代码变少，为想象中的使用者预留一层让代码变多。
+2. **Don't introduce a new concept until it has two real users.**
+   A base class, interface, utility module, or config switch with a single
+   call site is not an abstraction; it is a detour. It adds a layer someone
+   has to understand and buys no reuse.
+   This does not contradict "find the commonality" above; the difference is
+   only whether the change adds or removes: merging existing duplication
+   makes the code smaller, reserving a layer for an imagined user makes it
+   larger.
 
-3. **优先删代码，而不是加代码。**
-   如果一个需求可以靠删代码满足，那就是更好的做法。删掉的代码不会出 bug。
+3. **Prefer deleting code to adding code.**
+   If a request can be met by deleting code, that is the better move.
+   Deleted code cannot have bugs.
 
-4. **让活动部件尽量少。**
-   函数优于类，文件优于包，朴素数据结构优于框架。
-   没有引入的依赖，就是永远不需要升级、审计和调试的依赖。
+4. **Keep the number of moving parts small.**
+   Functions over classes, files over packages, plain data structures over
+   frameworks. A dependency you never introduced is one you never have to
+   upgrade, audit, or debug.
 
-5. **不要留死路径。**
-   不要为单个调用者加开关，不要为不可能发生的情况写分支，
-   不要用 try/except 掩盖 bug，不要为没人在跑的版本留兼容层，
-   不要为自己代码完全掌控的状态写防御性兜底。
-   死路径的坏处是它看起来在工作：没人执行过，也就没人知道它是错的。
-   不可达的状态就让它大声崩掉。
+5. **Leave no dead paths.**
+   Don't add a switch for a single caller, don't branch for a case that
+   cannot happen, don't hide bugs with try/except, don't keep a
+   compatibility layer for a version nobody runs, and don't write defensive
+   fallbacks for state your own code fully controls.
+   A dead path is harmful because it looks like it works: nobody has ever
+   executed it, so nobody knows it is wrong.
+   Let unreachable states crash loudly.
 
-6. **配置是最后的手段。**
-   加一个选项，等于承诺永远支持它的所有组合。
-   先选一个好的默认值写死，直到真的有人需要另一个值。
-   真的需要变化时，优先用**组合**去满足，而不是用参数
-   （见 [组合优于配置](composition-over-configuration.md)）。
+6. **Configuration is the last resort.**
+   Adding an option is a promise to support every combination of it forever.
+   Pick one good default and hardcode it until someone actually needs
+   another value. When variation is genuinely needed, satisfy it with
+   **composition**, not parameters
+   (see [composition over configuration](composition-over-configuration.md)).
 
-7. **同一件事只说一遍。**
-   每个事实只有一个来源，否则它们迟早会不一致。
-   但重复比错误的抽象便宜——错误的抽象要连坐所有使用者，
-   所以等到第三次出现、看清楚共性到底是什么之后再合并。
+7. **Say each thing once.**
+   Every fact has one source, or the copies will eventually disagree.
+   But duplication is cheaper than a wrong abstraction — a wrong abstraction
+   implicates every user of it — so wait until the third occurrence, when
+   you can see what the commonality actually is, before merging.
 
-## 怎么用
+## How to use it
 
-在添加任何东西之前先回答：**如果不加它，今天会坏掉什么？**
-如果答案是「什么都不会」，那就别加。
+Before adding anything, answer: **if I don't add this, what breaks today?**
+If the answer is "nothing", don't add it.
 
-改动越写越大时，通常是因为问题从一开始就没有被收窄。
-停下来，用一句话重新描述问题，然后只解决那句话。
+When a change keeps growing, it is usually because the problem was never
+narrowed in the first place. Stop, restate the problem in one sentence, and
+solve only that sentence.
 
-动手之前还要问一句：**这个需求和已经做过的那些，共性是什么？
-能不能让它们变成同一件事？** 想清楚再写，不要一边砌砖一边想。
+Before starting, also ask: **what does this request have in common with the
+ones already done? Can they become the same thing?** Think it through before
+writing; don't lay bricks while still deciding the shape.
 
-优先级顺序：**删掉某样东西** → **改动已有的东西** → **加一个尽量小的新东西**。
+The order of preference: **delete something** → **change something that
+exists** → **add the smallest new thing you can**.
 
-## 极简主义不是什么
+## What minimalism is not
 
-这些是把上面的条目当条文、而不是当意图来读时，最常见的误用：
+These are the common misuses of reading the items above as rules rather than
+as intent:
 
-- **不是把代码写短。**
-  清楚的命名和直白的控制流不是冗余；为了短而牺牲可读性，
-  是在增加理解成本——正好和本条规范想要的相反。
-- **不是少做事。**
-  要求的东西要完整交付。极简削减的是解决方案需要的机械结构，不是需求本身。
-- **不是省掉真实失败模式所需要的测试、类型和错误处理。**
-  处理真的会发生的错误，忽略不可能发生的。
-  为真实失败模式写的测试是在还债，不是在欠债。
-- **不是照着需求字面砌砖。**
-  「只做眼前需要的」说的是功能范围，不是思考范围。
-  省掉设计、缺什么补什么，是第二种退化模式，不是极简。
-- **不是过早删除。**
-  在删掉一段代码之前，先搞清楚它为什么存在。
-  看起来多余，往往只是意味着你还没找到它的使用者。
+- **It is not making the code short.**
+  Clear names and straightforward control flow are not redundancy. Sacrificing
+  readability for brevity raises the cost of understanding — the opposite of
+  what this rule wants.
+- **It is not doing less.**
+  What was asked for gets delivered in full. Minimalism cuts the machinery
+  the solution needs, not the request itself.
+- **It is not skipping the tests, types, and error handling that real
+  failure modes need.**
+  Handle errors that really happen; ignore the ones that cannot. A test
+  written for a real failure mode is paying down debt, not taking it on.
+- **It is not laying bricks to the letter of the request.**
+  "Only do what is needed right now" is about the scope of features, not the
+  scope of thinking. Skipping the design and patching whatever is missing is
+  the second mode of decay, not minimalism.
+- **It is not deleting early.**
+  Before deleting a piece of code, find out why it exists. Looking redundant
+  often only means you have not found its user yet.

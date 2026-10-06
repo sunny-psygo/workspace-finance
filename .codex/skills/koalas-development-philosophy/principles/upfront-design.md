@@ -1,127 +1,155 @@
-# 事前设计优于事后救火
+# Upfront design beats firefighting
 
 **Easy choices, hard life; hard choices, easy life.**
 
-开头容易的选择——照着需求先写起来、有问题再说——换来的是没完没了的救火。
-开头难的选择——停下来把东西想清楚——换来的是后面一路顺。
-所以设计一定要做**充分**。
+The easy choice at the start — write to the request and deal with problems
+when they show up — buys endless firefighting. The hard choice at the start
+— stop and think the thing through — buys a smooth road afterward. So design
+has to be done **thoroughly**.
 
-## 设计指的是抽象，不是结构
+## Design means the abstraction, not the structure
 
-这里说的设计，**不是**一上来就画模块图、定技术栈、列接口。
-那些是设计的产物，不是设计本身；先做那些，等于在还没想清楚要造什么之前就开始施工。
+The design meant here is **not** drawing module diagrams, picking a tech
+stack, and listing interfaces up front. Those are products of design, not
+design itself. Doing them first is starting construction before you have
+figured out what you are building.
 
-真正要做的只有两件事：
+There are only two things to actually do:
 
-1. **想清楚要做的这个东西「是什么」。**
-   给一个东西下定义，正是「抽象」这个词的本义。
-2. **想清楚它「天然」应该长什么样。**
+1. **Get clear on what this thing "is".**
+   Defining a thing is exactly what the word "abstraction" means.
+2. **Get clear on what it "naturally" ought to look like.**
 
-## 最根本的东西是认知
+## The most fundamental thing is cognition
 
-认知和抽象是同一件事的两面，而且它在每一层都存在：
-对项目、对模块、对函数、对一个变量（名字就是认知的外化）。
-**这些认知的设计是最重要的事。**
-认知设计得好，所有东西都会显得很自然，
-**bug 天然就不会出现，因为 bug 是不自然的**
-（展开见 [优秀是默认值](excellence-by-default.md)）。
+Cognition and abstraction are two sides of the same thing, and they exist at
+every level: the project, a module, a function, a variable (the name is
+cognition made visible).
+**Designing these cognitions is the most important work.**
+When the cognition is designed well, everything looks natural, and **bugs
+simply don't arise, because a bug is unnatural**
+(see [excellence is the default](excellence-by-default.md)).
 
-反过来是个很好用的信号：一个地方总要靠打补丁才能维持，
-通常不是实现写错了，而是那里的认知一开始就错了。
+The reverse is a very useful signal: a place that can only be kept standing
+by patches is usually not an implementation written wrong. The cognition
+there was wrong from the start.
 
-而认知的质量取决于上下文的完整程度——
-拿着一个局部下定义，得到的一定是错的定义。
-展开见 [认知：给事物下定义的能力](cognition.md)。
+And the quality of a cognition depends on how complete the context is — a
+definition made from a fragment is certainly a wrong definition.
+See [cognition: the ability to define things](cognition.md).
 
-## 一个例子：做 AI 自动生成 PPT 的工具
+## An example: a tool that generates slide decks with AI
 
-**浅层的做法**是从需求出发：把它设计成一条工作流——先搜集信息，再定排版，
-再生成内容；或者设计成「先出 HTML 再转 PPT」，然后往里面堆一大堆奇奇怪怪的提示词。
-能跑，但每加一种情况就要多一个环节、多一段提示词，很快就没人敢动了。
+**The shallow approach** starts from the request: design it as a workflow —
+gather information, then settle the layout, then generate the content; or
+design it as "emit HTML, then convert to a deck", and then pile a heap of
+odd prompts into it. It runs, but every new case means another stage and
+another prompt, and soon nobody dares to touch it.
 
-**深层的做法**是先问「是什么」：
+**The deep approach** asks "what is it" first:
 
-- **codex、Claude Code 是什么？** 是已经存在的、通用的「智能执行者」。
-  它们做不好 PPT，不是因为不够聪明，而是**缺一件顺手的工具**。
-- **PPT 是什么？** 一组图片。
+- **What are Codex and Claude Code?** Existing, general "intelligent
+  executors". They are bad at slide decks not because they aren't smart
+  enough, but because **they lack one convenient tool**.
+- **What is a slide deck?** A set of images.
 
-两个定义一摆出来，该做的东西就自己浮现了：
-做一个**面向图片的构建系统**，类似 cmake——
-AI 负责写「每一页长什么样」的描述，系统负责 make 出图片；
-在它之外，再加一个把多张图片合成 PDF/PPT 的工具。就这么多。
+Lay the two definitions down and the thing to build surfaces by itself:
+build an **image-oriented build system**, something like cmake — the AI
+writes a description of "what each page looks like", and the system makes
+the images; beside it, add a tool that composes several images into a
+PDF/PPT. That is all.
 
-妙处在于它**不是一条固定流程**：
+The beauty is that it **is not a fixed pipeline**:
 
-- 想加事前的信息检索？直接跟 AI 说「先检索，再用这个系统做」，不用改系统。
-- AI 做完可以自己看图、自己调整，直到好看为止。
-- **版本控制**顺带解决了：PPT 的版本控制被 reduce 成了文字描述的版本控制。
-- **增量构建**顺带解决了：每次 make 只重建描述改过的那几页。
-- **还能迁移**：加上依赖追踪（一张图可以引用另一张图作参考），
-  同一个系统可以拿去做漫画、做宣发物料。
+- Want information retrieval beforehand? Just tell the AI "search first,
+  then use this system" — no change to the system.
+- After it finishes, the AI can look at the images itself and adjust until
+  they look good.
+- **Version control comes for free**: versioning the deck reduces to
+  versioning the text descriptions.
+- **Incremental builds come for free**: each make rebuilds only the pages
+  whose descriptions changed.
+- **It transfers**: add dependency tracking (one image can reference another
+  as a reference) and the same system can make comics or promotional
+  material.
 
-在这个例子里，重要的不是想「怎么自动做 PPT」，
-而是想「PPT 是什么」「codex 是什么」。
-**针对业务的思考是浅层的，针对「是什么」的思考是深层的，而深层的思考往往更重要。**
+In this example, what matters is not thinking "how do we auto-generate slide
+decks". It is thinking "what is a slide deck" and "what is Codex".
+**Thinking aimed at the business is shallow; thinking aimed at "what is it"
+is deep, and the deep thinking is usually the more important.**
 
-## 开发不是需求驱动的，是技术驱动的
+## Development is not demand-driven. It is technology-driven
 
-需求驱动的开发最终一定会变成屎山：
-需求是零散的、互相无关的，照着一条条实现，得到的就是一堆互相无关的东西。
+Demand-driven development inevitably ends as a pile of mud: requests are
+scattered and unrelated to each other, and implementing them one by one
+produces a pile of unrelated things.
 
-好的开发者有一种**关于事物「应然」的直觉**：这东西本来就该是这个样子。
-这种直觉**先于需求，也先于所谓的痛点**。
-它是一种「天理」，一种根植于人心、也根植于宇宙规律的「道」，
-一种「美」，一种「正义」。
-我们说的**优雅（elegance），描述的正是这种与业务需求无关的美**。
+A good developer has an **intuition about how a thing "ought" to be**: this
+thing was always supposed to look like this. That intuition **comes before
+the request, and before the so-called pain point**. It is a kind of natural
+order, a way rooted in people and in the regularities of the world, a kind
+of beauty, a kind of rightness. The **elegance** we talk about describes
+exactly this beauty that has nothing to do with business requirements.
 
-- Google 把信息获取 reduce 成一个搜索框，靠的是这种美。
-- Linus 把 Linux 里的文件设计成一种抽象标准——
-  不只装得下文件，还装得下各种硬件设备——靠的是这种美。
-- Transformer 把思考建模成「预测下一个 token」，靠的还是这种美。
+- Google reduced getting information to a single search box, by this beauty.
+- Linus made a file in Linux into an abstract standard — one that holds not
+  only files but all kinds of hardware devices — by this beauty.
+- The Transformer modeled thinking as "predict the next token", by this
+  beauty again.
 
-这三件事都不是从需求清单里推出来的。
+None of the three was derived from a requirements list.
 
-## 美不是修辞，它是「更可能是对的」
+## Beauty is not rhetoric. It is "more likely to be right"
 
-简洁、优雅、通用的东西往往是对的，这件事有根据：
+That simple, elegant, general things tend to be right has a basis:
 
-- 从哲学上说，这种优雅是世界本质的一种显现。
-- 从数学上说，它直接关联到 **Solomonoff induction**——越短的程序先验概率越高——
-  以及 **Kolmogorov complexity**。
-  能用更短的描述解释同样多的现象，意味着更可能抓住了真实的规律，
-  而不是记住了一堆巧合。
+- Philosophically, this kind of elegance is a manifestation of the nature of
+  the world.
+- Mathematically, it connects directly to **Solomonoff induction** — shorter
+  programs have higher prior probability — and to **Kolmogorov complexity**.
+  A shorter description that explains the same amount of phenomena is more
+  likely to have caught the real regularity, rather than memorized a pile of
+  coincidences.
 
-所以「这个设计不够优雅」不是审美挑剔，
-而是一句关于正确性的判断：**它大概率还没说中本质。**
-反过来，当一个设计让你觉得「本来就该这样」的时候，
-它多半也会在你没预料到的地方继续成立。
+So "this design isn't elegant enough" is not an aesthetic quibble. It is a
+judgment about correctness: **it probably hasn't hit the essence yet.**
+Conversely, when a design makes you feel "it was always supposed to be this
+way", it will usually keep holding in places you didn't anticipate.
 
-## 怎么用
+## How to use it
 
-动手之前先回答两个问题，答不上来就别开始写：
+Before starting, answer two questions. If you can't, don't start writing:
 
-1. **这东西是什么？**（一句话，不许用「一个用来……的系统」这种同义反复）
-2. **它天然该长什么样？**
+1. **What is this thing?** (One sentence. No tautologies like "a system for
+   doing…".)
+2. **What should it naturally look like?**
 
-过程中拿这几个信号校准：
+Calibrate along the way with these signals:
 
-- **卡住了、要堆特例、要加奇怪的提示词** → 通常不是难度问题，是抽象错了。
-- **觉得丑** → 认真对待这个感觉，它往往比说得出的理由更早发现问题。
-- **需求是线索，不是蓝图。** 需求告诉你「是什么」猜得对不对，
-  但它本身不是答案；照抄需求得到的是屎山。
+- **You're stuck, piling on special cases, adding strange prompts** →
+  usually not a difficulty problem; the abstraction is wrong.
+- **It feels ugly** → take that feeling seriously. It often finds the
+  problem earlier than any reason you can state.
+- **A request is a clue, not a blueprint.** Requests tell you whether your
+  guess at "what it is" is right, but they are not themselves the answer.
+  Copying the request gives you a pile of mud.
 
-想清楚不等于无限期空想。判据很简单：
-**你能不能一句话说清这东西是什么。** 能，就可以动手了；
-不能，多想的那半天一定比后面救火的那三天便宜。
+Thinking it through is not indefinite daydreaming. The criterion is simple:
+**can you say what this thing is in one sentence?** If you can, you can
+start. If you can't, the extra half day of thinking is certainly cheaper
+than the three days of firefighting later.
 
-## 这条规范不是什么
+## What this rule is not
 
-- **不是大设计先行（BDUF），更不是瀑布。**
-  要提前想清楚的是「是什么」，不是把所有细节、所有接口提前定死。
-  抽象定对了，细节可以边做边长出来。
-- **不是给过度工程发许可证。**
-  想清楚的结果应该是**做得更少**：一个准确的抽象会消灭掉一堆特例。
-  如果你的「设计」带来的是更多的层、更多的扩展点、更多的配置，
-  那不是设计，是第一种退化模式（见 [minimalism](minimalism.md)）。
-- **不是不听需求。**
-  需求是认知的原材料和检验标准。不看需求想出来的「优雅」是自嗨。
+- **It is not big design up front (BDUF), and it is not a waterfall.**
+  What has to be thought through in advance is "what it is", not locking
+  down every detail and every interface ahead of time. Get the abstraction
+  right and the details can grow as you build.
+- **It is not a license for over-engineering.**
+  The result of thinking it through should be **doing less**: an accurate
+  abstraction eliminates a pile of special cases. If your "design" produces
+  more layers, more extension points, and more configuration, that is not
+  design. It is the first mode of decay (see [minimalism](minimalism.md)).
+- **It is not ignoring requests.**
+  Requests are the raw material and the test of cognition. Elegance thought
+  up without looking at the requests is self-indulgence.

@@ -1,35 +1,42 @@
-# Playbook：遇到一个 bug
+# Playbook: hitting a bug
 
-## 步骤
+## Steps
 
-1. **先判严重性。** 涉及数据、隐私、钱的，先止血、先恢复。
-   **但止血不等于解决**：临时补丁要标出来，根因要记下来。
+1. **Judge the severity first.** Anything involving data, privacy, or money:
+   stop the bleeding first, restore first. **But stopping the bleeding is not
+   solving it**: mark the temporary patch, and record the root cause.
 
-2. **复现，并把复现过程收成一个最小用例。**
-   收不到最小用例，通常说明你还没搞清楚它到底依赖什么条件。
+2. **Reproduce it, and reduce the reproduction to a minimal case.**
+   If you can't get it down to a minimal case, that usually means you still
+   haven't figured out exactly which conditions it depends on.
 
-3. **问「为什么这个状态可能出现」，而不是「哪一行写错了」。**
-   哪一行写错了只能告诉你怎么打补丁。
+3. **Ask "why can this state occur", not "which line is written wrong".**
+   Which line is wrong only tells you how to patch it.
 
-4. **看是不是第二次。**
-   同一个根因第二次出现，就不许再就地修
-   （见[同类问题出现第二次](second-occurrence.md)）。
+4. **Check whether this is the second time.**
+   The second occurrence of the same root cause may not be fixed in place
+   (see [the second occurrence of the same kind of problem](second-occurrence.md)).
 
-5. **修完再问一句：怎么让这一类 bug 根本没机会发生？**
-   能靠结构消灭就消灭（拿掉共享、拿掉第二份真相、让非法状态构造不出来）；
-   结构上消不掉，才考虑用测试兜住
-   （见[优秀是默认值](../principles/excellence-by-default.md)和
-   [测试](../domain-mindsets/testing.md)）。
+5. **After fixing it, ask one more thing: how do we make this whole class of
+   bug have no chance to occur?** If structure can eliminate it, eliminate it
+   (remove the sharing, remove the second source of truth, make the illegal
+   state unconstructable). Only what structure cannot eliminate is worth
+   catching with a test (see
+   [excellence is the default](../principles/excellence-by-default.md) and
+   [testing](../domain-mindsets/testing.md)).
 
-6. **记录根因，不是记录现象。**
-   「点击导出偶尔白屏」没有信息量，
-   「导出复用了请求级的缓存，并发时会串」才有。
+6. **Record the root cause, not the phenomenon.**
+   "Clicking export occasionally shows a white screen" carries no
+   information. "Export reuses the request-scoped cache, and concurrent
+   requests cross" does.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **第 5 步会让小 bug 修得很慢。**
-  所以它只对**错了代价大**的地方是必答题：数据、隐私、钱、
-  以及已经复发过的那些。按钮颜色不对，修完就走。
-- **别在救火时做设计。** 第 3 到 5 步是止血之后的动作。
-- **不是所有 bug 都有深层根因。** 有些就是手滑打错了字，
-  追问两层发现追不动，就停下来。
+- **Step 5 makes small bugs slow to fix.**
+  So it is mandatory only where **being wrong is expensive**: data, privacy,
+  money, and the ones that have already recurred. A button in the wrong
+  color — fix it and move on.
+- **Don't do design while firefighting.** Steps 3 through 5 happen after the
+  bleeding has stopped.
+- **Not every bug has a deep root cause.** Some are just a typo. If two
+  levels of questioning find nothing to follow, stop.

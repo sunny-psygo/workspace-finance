@@ -1,71 +1,86 @@
-# 当心看不见的耦合
+# Beware of coupling you can't see
 
-**最危险的耦合，不是代码里 import 来 import 去的那种，
-而是两个东西共享了一个没有被写下来的概念或预期。**
+**The most dangerous coupling is not the kind where code imports back and
+forth. It is two things sharing a concept or an expectation that was never
+written down.**
 
-前者编译器、IDE、依赖图都能帮你找出来；
-后者不在任何依赖关系里，**只有出事的时候才现身**。
+The former, a compiler, an IDE, and a dependency graph can all help you find.
+The latter is in no dependency relationship at all, and **it only shows
+itself when something has already gone wrong**.
 
-## 三层，越往下越隐蔽
+## Three layers, more hidden the further down
 
-### 一、接口层：同一份契约被实现了两次
+### 1. The interface layer: the same contract implemented twice
 
-两个系统靠一个 API surface 对接，
-那个 surface 实际上被实现了两次——一次在提供方，一次在使用方的假设里。
-改了一边，另一边不会报错，只会在运行时对不上。
+Two systems meet at an API surface, and that surface is in fact implemented
+twice — once on the providing side, once in the assumptions of the using
+side. Change one side and the other doesn't error. It only fails to match at
+runtime.
 
-这一层是有解的：**让它只有一处定义**
-（Next.js 里后端就是一个函数，「前后端接口对不上」根本无法被表达，
-见[优秀是默认值](excellence-by-default.md)）。
+This layer has a solution: **give it exactly one definition** (in Next.js the
+backend is a function, and "the frontend and backend interfaces don't match"
+is simply inexpressible; see
+[excellence is the default](excellence-by-default.md)).
 
-### 二、概念层：两个功能共享同一个概念，却各自解释
+### 2. The concept layer: two features share one concept and each interprets it
 
-一个页面显示「剩余额度」，另一个页面显示「额度明细」。
-**「额度」到底是什么**——含不含赠送的？含不含已经预扣但还没结算的？
-如果没有一处定义，两边就会各自解释，然后慢慢对不上，
-而且是**在用户眼皮底下对不上**。
+One page shows "remaining credit", another shows "credit breakdown".
+**What "credit" actually is** — does it include what was given for free? Does
+it include what has been reserved but not yet settled? If there is no single
+definition, the two sides each interpret it, and then slowly stop matching,
+and they **stop matching right under the user's eyes**.
 
-代码里这两个页面可能毫无关系，grep 不到任何共同点。
-它们真正共享的东西是一个词。
+In the code these two pages may have nothing to do with each other. Grep
+finds no common point. What they actually share is a word.
 
-### 三、用户预期层：一个功能塑造了习惯，另一个默默依赖了它
+### 3. The user-expectation layer: one feature shapes a habit, another silently depends on it
 
-最隐蔽的一层，因为它连代码都不在。
+The most hidden layer, because it isn't even in the code.
 
-- 这个界面里的操作一向可撤销，用户因此养成了「先做再说」的习惯；
-  某天在同样的位置放了一个**不可撤销**的删除。
-- 列表一向是「最上面是最新的」，另一个页面复用了同一个组件，
-  但改成了按相关度排序。
-- 一个输入框一向是本地筛选，另一个长得一模一样的框会**发请求并计费**。
+- Operations in this interface have always been undoable, so users develop
+  the habit of "do it first, think later"; one day, in the same place, you
+  put a deletion that **cannot be undone**.
+- Lists have always been "the newest is at the top"; another page reuses the
+  same component but sorts by relevance instead.
+- One input box has always filtered locally; another box that looks identical
+  **sends a request and charges for it**.
 
-代码上毫无关系，测试全绿，但**用户会照着旧习惯行事，然后受伤**。
-用户的预期是被你自己的产品训练出来的——**那也是一种接口，只是没写在任何文件里。**
+The code is entirely unrelated, the tests are all green, but **the user acts
+on the old habit and gets hurt**. The user's expectation was trained by your
+own product — **that is an interface too, only it is written in no file.**
 
-## 为什么它特别危险
+## Why it is especially dangerous
 
-- **它不在依赖图里**：grep 不到，类型系统不管，review 也看不见。
-- **它的破坏是静默的**：不会报错，只会「不一致」——
-  等到有人发现，通常已经是用户或财务发现的了。
-- **它随时间加重**：每加一个功能，那个隐性概念就多一个引用点，
-  而没有任何机制在统计它们。
+- **It isn't in the dependency graph**: grep can't find it, the type system
+  doesn't govern it, and review can't see it.
+- **Its damage is silent**: it doesn't error, it only "disagrees" — and by
+  the time someone notices, it is usually a user or finance who noticed.
+- **It gets heavier over time**: every feature you add is one more reference
+  point for that implicit concept, and no mechanism is counting them.
 
-## 怎么办
+## What to do
 
-- **把共享的概念显式化，给它一处定义。**
-  能做到「只有一个定义」最好；做不到，至少让两边从同一个地方取。
-- **先给概念命名，并写下来。**
-  「额度」指什么，写进那一页[「这是什么、为什么」](what-is-a-repo.md)。
-  **命不了名的概念，一定会被各自解释。**
-- **改动时问的是「谁还依赖这个概念、这个预期」，不是「谁 import 了这个文件」。**
-- **体验层用一致性规则代替逐个判断**：
-  同一位置、同样外观的东西，行为必须同类；
-  **要打破这个预期，就必须在视觉上也打破它**，让用户看得出来这次不一样。
+- **Make the shared concept explicit, and give it one definition.**
+  Best is "exactly one definition"; failing that, at least have both sides
+  read it from the same place.
+- **Name the concept first, and write it down.**
+  What "credit" means goes on that page of
+  ["what this is, and why"](what-is-a-repo.md).
+  **A concept that cannot be named will certainly be interpreted differently
+  by each side.**
+- **When changing something, the question is "who else depends on this
+  concept, this expectation", not "who imported this file".**
+- **At the experience layer, use consistency rules instead of judging case by
+  case**: things in the same place with the same appearance must behave as
+  the same kind. **To break that expectation, you must break it visually
+  too**, so the user can see that this time is different.
 
-## 这条规范不是什么
+## What this rule is not
 
-- **不是要求把所有共享概念都抽成公共模块。**
-  错误的抽象比重复贵得多。判据是**它们是不是同一个概念**，
-  而不是「它们看起来像不像」（见[组合优于配置](composition-over-configuration.md)）。
-- **不是禁止复用组件。**
-  复用外观没问题，语义不同也没问题——
-  但那时必须让用户**看得出来**它不一样。
+- **It does not require every shared concept to be extracted into a common
+  module.** A wrong abstraction is far more expensive than duplication. The
+  criterion is **whether they are the same concept**, not "whether they look
+  alike" (see [composition over configuration](composition-over-configuration.md)).
+- **It does not forbid reusing components.**
+  Reusing the appearance is fine, and different semantics are fine too — but
+  then the user must be able to **see** that it is different.

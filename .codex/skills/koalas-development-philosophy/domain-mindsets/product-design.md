@@ -1,29 +1,71 @@
-# 产品与交互设计
+# Product and interaction design
 
-**最伟大的产品都是通用的。**
-「功能丰富」不是好。真正的好，是用极其简单、极其自然，
-自然到用户不可能不会用的很少几个功能，让用户能做他想做的任何事。
+**The greatest products are all general.**
+"Feature-rich" is not good. What is actually good is letting the user do
+anything they want to do, using very few features that are extremely simple
+and extremely natural — natural to the point where the user could not
+possibly fail to use them.
 
-Google 用一个搜索框，取代了传统门户和 BBS 里层层分类的目录。
-ChatGPT 用一个对话框，取代了一整排各司其职的工具入口。
-它们能做的事不是更少，是多到列不完——因为它们没有去列。
+Google replaced the layer upon layer of categorized directories in the
+traditional portal and the BBS with one search box. ChatGPT replaced a whole
+row of purpose-built tool entry points with one dialog box. What they can do
+is not less. It is too much to list — because they never went and listed it.
 
-为什么「功能丰富」是错的方向：
+Why "feature-rich" is the wrong direction:
 
-- **认知成本被转嫁给了用户。** 功能一多，用户在做事之前得先解决一个新问题：
-  我这件事该用哪个功能？每加一个入口，其他所有入口都变得更难找。
-- **功能列表永远追不上真实需求。** 通用的设计能让用户做出设计者根本没想到的事，
-  这个覆盖面是靠穷举功能达不到的。
-- **它常常只是好展示。** 加功能容易体现工作量，删功能和重做设计不容易——
-  但后者才是本事。**创意考拉不欢迎用堆功能来体现工作量的做法。**
+- **The cognitive cost is shifted onto the user.** Once there are many
+  features, the user has to solve a new problem before doing the thing:
+  which feature is this done with? Every entry point you add makes every
+  other entry point harder to find.
+- **A feature list can never catch up with real needs.** A general design
+  lets the user do things the designer never thought of, and that coverage
+  cannot be reached by enumerating features.
+- **It is often only good for showing off.** Adding features makes the amount
+  of work easy to display; deleting features and redoing the design does not
+  — but the latter is the actual skill. **Creative Koalas does not welcome
+  piling on features as a way to display the amount of work.**
 
-这是 [minimalism](../principles/minimalism.md) 里「外推是为了做减法」
-在产品上的同一件事：找到需求的共性，把十个功能塌缩成一个更通用的功能。
+This is the same thing as "extrapolate in order to subtract" in
+[minimalism](../principles/minimalism.md), applied to the product: find the
+commonality across the requests, and collapse ten features into one more
+general one.
 
-怎么做：
+How to do it:
 
-- **别数功能数量。** 该看的是「用户能做到的事」除以「用户需要先学会的东西」。
-- **来了新需求先问：能不能不加功能？**
-  能不能让已有的那一个更通用一点，就把这个需求覆盖掉？
-- **要写使用说明才会用，说明设计还没做完。**
-  「简单自然」的验收标准是用户不用教——不是文档写得好。
+- **Don't count the number of features.** What to look at is "what the user
+  can do" divided by "what the user has to learn first".
+- **When a new request arrives, ask first: can it be done without adding a
+  feature?** Can making the one that already exists a bit more general cover
+  this request?
+- **If it needs a manual before it can be used, the design isn't finished.**
+  The acceptance criterion for "simple and natural" is that the user needs no
+  teaching — not that the documentation is well written.
+
+Also, when designing anything for someone else to use, don't stare only at
+the product layer itself. The product, the system formed by the product plus
+other things that already exist, and the system formed once the user is
+added, are three different boundaries. See
+[the three boundaries](three-boundaries.md).
+
+## Watch the whole experience through a character who doesn't know the design
+
+**An agent is responsible for the whole product. Verification cannot stop at
+the code.** The way to do it is
+[an independent agent with engineered context](../practices/engineered-context.md):
+the character is a user who doesn't know the design, and what they can
+actually understand and accomplish is the evidence. Letting only people who
+know the whole design do the evaluating makes it easy to mistake what you
+yourself know for something the product has already made clear.
+
+For a product, the characters that matter are a first-time user, a beta
+tester, an administrator, a new maintainer, and a user coming back with old
+habits. Testing first-time understanding means a clean context and only the
+entry point that person would meet; testing a workflow means adding only the
+task and the material a real user of it would have.
+
+Watch how they find the entry point, look up help, understand the concepts,
+try the operation, and handle failure, and only then ask why. Feed what you
+find back into the product, the guidance, the docs, the deployment, and the
+maintenance experience, and retry with a fresh character after a fix. The
+method, and its limits, are in that practice: the result is evidence, and
+whether to change is still judged by the product's purpose.

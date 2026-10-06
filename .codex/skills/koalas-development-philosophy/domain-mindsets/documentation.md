@@ -1,117 +1,155 @@
-# 文档与规范
+# Documentation
 
-**文档的目的只有一个：让读者理解——怎么用、怎么工作、怎么改，以及为什么是这样。**
-文档本身没有价值，只是达成理解的手段。
+**Documentation has exactly one purpose: to make the reader understand — how
+to use it, how it works, how to change it, and why it is this way.**
+Documentation has no value in itself. It is only the means of reaching
+understanding.
 
-## 先分清楚：你在描述什么
+## First distinguish: what are you describing
 
-文档分两类，**按它描述的东西分**，两类的处理方式几乎相反：
+Documentation comes in two kinds, **divided by what it describes**, and the
+two are handled in almost opposite ways:
 
-| 描述的是 | 放哪里 | 为什么 |
+| It describes | Where it goes | Why |
 | --- | --- | --- |
-| **实现**：这个函数做什么、这个包怎么用 | 贴着实现放，能生成就生成 | 离得越近，越难和实现发散 |
-| **上下文与设计**：背景、抽象与认知、为什么这么设计 | 独立的目录，长期维护 | 它和实现结构本来就对不上，也读不出来 |
+| **The implementation**: what this function does, how this package is used | Next to the implementation; generated if it can be | The closer it is, the harder it is to diverge from the implementation |
+| **Context and design**: background, abstraction and cognition, why it was designed this way | Its own directory, maintained over time | It doesn't correspond to the implementation's structure in the first place, and it can't be read out of the code |
 
-把第二类硬塞进 docstring，和把第一类摊成一份平行的 API 文档，是同一种错误的两个方向。
+Forcing the second kind into a docstring, and spreading the first kind out
+into a parallel API document, are the same mistake in two directions.
 
-## 对实现的描述：越近越好
+## Descriptions of the implementation: the closer the better
 
-这一类的目标是：
+The goal for this kind is:
 
-> **最好的文档是不需要文档。**
+> **The best documentation is no documentation.**
 
-如果代码足够清晰、结构足够好，任何人都能找到该看的那一段、读完就知道怎么办，
-那这类文档就是多余的。现实当然没这么简单，所以我们才写——
-但**方向永远是朝「不需要」走，而不是朝「更全」走**。
+If the code is clear enough and the structure good enough that anyone can
+find the piece they should read and know what to do after reading it, then
+this kind of documentation is superfluous. Reality is of course not that
+simple, which is why we write it — but **the direction is always toward "not
+needed", never toward "more complete".**
 
-现代开发在明显地往**自文档化的代码**走（docstring、Rust 从 docstring 派生的文档系统），
-它们解决的是同一个根本问题：
+Modern development is visibly moving toward **self-documenting code**
+(docstrings, Rust's documentation system derived from docstrings), and they
+solve the same fundamental problem:
 
-> **把描述放到离实现尽可能近的地方，让两者难以发散（documentation drift）。**
+> **Put the description as close as possible to the implementation, so the
+> two are hard to diverge (documentation drift).**
 
-改完代码「忘了更新文档」是常态；
-但你很难改完一个函数，却对紧挨着它的那三行 docstring 视而不见。
-这正是[优秀是默认值](../principles/excellence-by-default.md)的一个漂亮例子：
-不是要求人更自觉，而是**让「文档跟着代码走」成为最省力的那条路**。
+"Forgot to update the docs" after changing the code is the normal case. But
+it is hard to finish changing a function and fail to see the three lines of
+docstring right next to it. This is a fine example of
+[excellence is the default](../principles/excellence-by-default.md): not
+asking people to be more conscientious, but **making "the docs follow the
+code" the path of least effort**.
 
-所以：**描述要被约束在离它所描述之物最近的位置。**
+So: **a description should be constrained to the position closest to the
+thing it describes.**
 
-- 包级的用法说明 → `__init__.py`
-- 函数的行为、参数、边界 → docstring
-- 某段代码为什么这么写 → 就写在那段代码旁边
+- Package-level usage notes → `__init__.py`
+- A function's behavior, parameters, and boundaries → the docstring
+- Why some piece of code is written this way → right beside that piece of
+  code
 
-好处是**可追溯**：某个东西变了，顺着树往上找就知道哪些描述受影响、该改哪几处。
-独立的 API 文档不给你这个线索。
-**最不想要的，就是一份独立的 API 文档，加上一个改了实现却没更新它的马虎开发者**——
-而这几乎必然发生。
+The benefit is **traceability**: when something changes, looking up the tree
+tells you which descriptions are affected and which few places to change. A
+standalone API document gives you no such clue.
+**The last thing you want is a standalone API document plus a careless
+developer who changes the implementation without updating it** — and that
+almost inevitably happens.
 
-### 能生成就生成
+### If it can be generated, generate it
 
-这不是说使用者永远得去读源码。当然可以有更友好的形式——
-**但那种文档应该是生成的，不是手写的。**
+This doesn't mean the user always has to read the source. There can of course
+be a friendlier form — **but that documentation should be generated, not
+handwritten.**
 
-- `cargo doc`：文档从 docstring 自动派生。
-- FastAPI + pydantic：API schema、文档页面、可交互的 playground 全部自动生成。
+- `cargo doc`: the docs are derived automatically from docstrings.
+- FastAPI + pydantic: the API schema, the documentation pages, and the
+  interactive playground are all generated automatically.
 
-**能生成就生成**，而且在技术选型时就主动去找能做到这件事的工具和框架。
-手写一份和代码平行存在的文档，等于给自己加一个永远要还的同步义务
-——[代码是负债](../principles/what-is-code.md)，文档也是。
+**If it can be generated, generate it**, and when choosing technology,
+actively look for the tools and frameworks that can do exactly this. Writing
+by hand a document that exists in parallel with the code is giving yourself a
+synchronization obligation you have to keep paying forever —
+[code is a liability](../principles/what-is-code.md), and documentation is
+too.
 
-## 对抽象和设计的描述：每个项目都该有
+## Descriptions of the abstraction and the design: every project should have them
 
-**抽象的东西是目的，具体的东西是手段。**
+**The abstract thing is the purpose; the concrete thing is the means.**
 
-如果一个项目只留下了手段，没有把目的记下来，
-那么对手段的每一次更新都会一点点偏离目的；
-积累下去，代码还在跑，但它解决的已经不是当初要解决的那个问题了。
-所以**任何一个项目都应该维护实现背后那些抽象的东西**——
-这不是有余力才做的事。
+If a project keeps only the means and never records the purpose, then every
+update to the means drifts a little away from the purpose. Accumulated, the
+code still runs, but what it solves is no longer the problem it was
+originally meant to solve. So **every project should maintain the abstract
+things behind the implementation** — this is not something you do only when
+you have spare capacity.
 
-这一类**读代码是读不出来的**：
+This kind **cannot be read out of the code**:
 
-- 这个系统到底**是什么**（见[认知：给事物下定义的能力](../principles/cognition.md)）
-- 为什么选了这个抽象，当初否决过哪些、为什么否决
-- 哪些约束是真的，哪些只是历史遗留
-- 边界在哪：什么**不**属于这个系统
+- What this system actually **is** (see
+  [cognition: the ability to define things](../principles/cognition.md))
+- Why this abstraction was chosen, which ones were rejected at the time, and
+  why they were rejected
+- Which constraints are real, and which are only historical leftovers
+- Where the boundary is: what does **not** belong to this system
 
-而且它和实现结构天然对不上——一个想法散落在五个模块里，放进哪个 docstring 都不对。
-所以它该有自己的目录，**并且和代码一样要维护**，不是写完一次就锁进抽屉。
+And it naturally doesn't correspond to the implementation's structure — one
+idea is scattered across five modules, and it fits in none of their
+docstrings. So it should have its own directory, **and it has to be
+maintained just like the code**, not written once and locked in a drawer.
 
-**注意「最好的文档是不需要文档」不适用于这一类。**
-代码再清晰，也只能告诉你它现在是什么样，
-永远告诉不了你它**为什么该是这样**、以及它**本来要成为什么**。
+**Note that "the best documentation is no documentation" does not apply to
+this kind.** However clear the code is, it can only tell you what it is like
+now. It can never tell you **why it should be this way**, or **what it was
+meant to become**.
 
-## 其余真正需要独立文档的
+## The rest that genuinely needs standalone documentation
 
-- **教程和上手指南。** 它讲的是「怎么完成一件事」，不属于任何一个函数。
-  但要清楚：**教程的存在是一种妥协，不是成就**——
-  设计做得越好，需要教的东西越少（见[产品与交互设计](product-design.md)：
-  要写使用说明才会用，说明设计还没做完）。
-  所以教程该随着设计变好而变薄，而不是越写越厚。
-- **已经成为惯例的东西**，比如每个项目都该有的 `README.md`。
+- **Tutorials and getting-started guides.** What they explain is "how to
+  accomplish one thing", which belongs to no single function. But be clear:
+  **the existence of a tutorial is a compromise, not an achievement** — the
+  better the design, the less there is to teach (see
+  [product and interaction design](product-design.md): if it needs a manual
+  before it can be used, the design isn't finished). So a tutorial should get
+  thinner as the design gets better, not thicker as it gets written.
+- **Things that have already become convention**, such as the `README.md`
+  every project should have.
 
-## 无论哪一类，都要短
+## Whichever kind, keep it short
 
-**所有文档都要尽可能简洁、明了、短。** 判断的准则是：
+**All documentation should be as concise, clear, and short as possible.** The
+criterion:
 
-> **在保证一个新人能比较容易看懂的前提下，尽可能压低篇幅。**
+> **Given that a newcomer can understand it fairly easily, push the length
+> down as far as possible.**
 
-两头都要卡：只求短会写成天书，只求全会写成没人读的长篇。
-中间那个点才是目标。
+Both ends are constrained: shortness alone produces something unreadable,
+completeness alone produces a long piece nobody reads. The point between them
+is the target.
 
-**篇幅还是设计的体检报告。**
-如果一段代码需要非常复杂的描述才能说明白，
-那大概率不是文档没写好，**是抽象设计有问题**
-（见[认知：给事物下定义的能力](../principles/cognition.md)）。
-这时候正确的反应是回去改设计，而不是把解释写得更详细。
-同理，一个需要长篇教程的产品，问题在产品，不在教程。
+**Length is also a physical for the design.** If a piece of code needs a very
+complicated description before it can be explained, the odds are that the
+documentation isn't badly written — **the abstraction is designed wrong**
+(see [cognition: the ability to define things](../principles/cognition.md)).
+The right response then is to go back and change the design, not to write the
+explanation in more detail. By the same reasoning, a product that needs a
+long tutorial has a problem in the product, not in the tutorial.
 
-**过期的文档比没有文档更糟**——它不是留白，是主动误导，而且看起来很权威。
-所以量要压到你维护得住的程度，这是
-[minimalism](../principles/minimalism.md) 在文字上的直接推论：
+**Stale documentation is worse than no documentation** — it isn't a blank, it
+is active misdirection, and it looks authoritative. So keep the volume down
+to what you can actually maintain. This is the direct corollary of
+[minimalism](../principles/minimalism.md) applied to prose:
 
-- 不写用不上的章节，不写「为了完整性」而存在的段落。
-- 同一件事只在一个地方说；其他地方链接过去，不要复述——复述的那份迟早会过期。
-- 一条没人会去检查、也没人会执行的规定，等于没有；删掉它比留着它诚实。
-- 流程里每一步都要能说出它拦住了什么。拦不住任何东西的步骤就是仪式。
-- 例子胜过穷举：给两个说清楚的例子，比列二十条边界情况有用。
+- Don't write sections nobody will use, and don't write paragraphs that exist
+  "for completeness".
+- Say each thing in exactly one place; everywhere else, link to it, don't
+  restate it — the restated copy will eventually go stale.
+- A rule nobody will check and nobody will follow is the same as no rule.
+  Deleting it is more honest than keeping it.
+- Every step in a process has to be able to say what it blocks. A step that
+  blocks nothing is ceremony.
+- Examples beat enumeration: two examples that make it clear are more useful
+  than a list of twenty edge cases.

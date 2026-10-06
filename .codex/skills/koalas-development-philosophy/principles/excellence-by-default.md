@@ -1,152 +1,189 @@
-# 优秀是默认值
+# Excellence is the default
 
-**伟大的设计让好的东西自然，让不好的东西不自然。**
+**Great design makes the good thing natural and the bad thing unnatural.**
 
 > Excellence is the default norm; badness needs trying hard.
 
-优秀不该是努力争取来的结果，而该是什么都不做时自然发生的事；
-要写出烂东西，反倒得费一番力气、别扭到写不下去。
+Excellence should not be something you have to strive for. It should be what
+happens when you do nothing in particular. Writing something bad should take
+real effort, enough effort that you can't bring yourself to finish it.
 
-## bug 是一条谱线，不是一个开关
+## A bug is a spectrum, not a switch
 
-这里的 **bug 指一切「不好」的东西**：崩溃、逻辑错误，
-也包括用户体验上的别扭、性能上的拖沓、结构混乱、可读性和可维护性上的欠账。
+A **bug here means everything that is "bad"**: crashes and logic errors, and
+also awkwardness in the user experience, sluggishness in performance, messy
+structure, and debt in readability and maintainability.
 
-而且它**不是二值的**。没有「有 bug / 没 bug」这条界线，
-只有从「妙不可言」到「勉强能跑」到「一碰就炸」的一整条连续谱线。
+And it **is not binary**. There is no line between "has a bug" and "has no
+bug", only a continuous spectrum from "marvelously right" through "barely
+runs" to "explodes at a touch".
 
-所以目标不是「消灭 bug」这种二值目标，而是**改变整条谱线上的难度分布**：
+So the goal is not the binary goal of "eliminate bugs". It is **to change the
+distribution of difficulty along the whole spectrum**:
 
-> **让越好的做法越省力，越差的做法越费劲。**
+> **The better the practice, the less effort it takes; the worse the
+> practice, the more effort it takes.**
 
-设计分三档，说的就是这条分布：
+Design comes in three grades, and they describe exactly this distribution:
 
-1. **坏的设计**里，好做法和坏做法一样容易，甚至坏做法更容易。
-   那结果一定是坏的——这不是人的问题，是默认值的问题。
-2. **好的设计**挡住坏做法，并处理坏做法造成的后果。
-   （靠的是防御、校验、文档、纪律，成本一直在付。）
-3. **伟大的设计**让好做法成为阻力最小的那条路，让坏做法别扭到写不下去。
-   **极限情形是坏做法根本无法被表达**——
-   就像《1984》里的「新话」：它不禁止反政府言论，
-   而是把词从语言里拿掉，让那种意思**根本说不出口**。
+1. **In a bad design**, the good practice and the bad practice are equally
+   easy, or the bad one is easier. The result is then certainly bad — this is
+   not a problem with the people, it is a problem with the default.
+2. **A good design** blocks the bad practice and handles the consequences the
+   bad practice causes. (Through defense, validation, documentation, and
+   discipline, and the cost is paid continuously.)
+3. **A great design** makes the good practice the path of least resistance,
+   and makes the bad practice so awkward you can't finish writing it.
+   **The limiting case is that the bad practice cannot be expressed at all**
+   — like Newspeak in *1984*: it doesn't forbid anti-government speech, it
+   removes the words from the language, so that meaning **simply cannot be
+   said**.
 
-第三档的推论之一：
-**伟大的设计常常不需要异常处理，因为根本不可能有异常。**
+One corollary of the third grade:
+**a great design often needs no exception handling, because an exception is
+simply impossible.**
 
-## 三档工程师
+## Three grades of engineer
 
-- **坏的工程师**：代码里没有异常处理。
-- **好的工程师**：代码里一堆异常处理。
-- **伟大的工程师**：代码里又很少异常处理——因为异常在出生之前就被干掉了。
+- **A bad engineer**: no exception handling in the code.
+- **A good engineer**: a pile of exception handling in the code.
+- **A great engineer**: very little exception handling in the code again —
+  because the exceptions were killed before they were born.
 
-注意第一档和第三档从外表看是一样的：都「没什么异常处理」。
-所以别用数量判断，用这个问题判断：
+Note that the first grade and the third look identical from the outside:
+both have "barely any exception handling". So don't judge by quantity. Judge
+by this question:
 
-> **这个异常为什么不可能发生？**
+> **Why is this exception impossible?**
 
-答得出结构性的理由（「这个状态没有任何代码路径能构造出来」）的，是第三档；
-答不出、或者答「应该不会吧」的，是第一档。
+If you can give a structural reason ("no code path can construct this
+state"), it is the third grade. If you can't, or the answer is "it probably
+won't happen", it is the first grade.
 
-## 两个具体例子
+## Two concrete examples
 
-**Serverless 架构里，state mismatch 根本不可能出现。**
-每个 request 就在一个函数里跑，你**拿不到**其他 request 的数据。
-不是「要小心不要共享状态」，是没有共享状态这个东西可供你搞错。
-一整类并发与状态污染的 bug 就此消失，连带那些为它们写的锁、清理和防御性检查一起消失。
+**In a serverless architecture, a state mismatch simply cannot occur.**
+Each request runs inside one function, and you **cannot get** another
+request's data. It is not "be careful not to share state". There is no such
+thing as shared state for you to get wrong. A whole class of concurrency and
+state-corruption bugs disappears, along with the locks, the cleanup, and the
+defensive checks written for them.
 
-**Next.js 里，前后端接口对不上根本不可能出现。**
-后端被表示成一个函数，那个函数**只有一个定义**。
-「前端调用的接口和后端实现的接口对不上」这句话，在这套表示法里 literally 无法被表达。
-不需要接口文档同步机制，不需要契约测试，不需要版本协商——问题不是被解决了，是不存在。
+**In Next.js, a frontend/backend interface mismatch simply cannot occur.**
+The backend is represented as a function, and that function **has exactly one
+definition**. The sentence "the interface the frontend calls doesn't match
+the interface the backend implements" is literally inexpressible in this
+representation. No interface-doc sync mechanism, no contract tests, no
+version negotiation — the problem isn't solved, it doesn't exist.
 
-两个例子的共同点：它们都不是**加**了什么防护，而是**拿掉**了让错误得以存在的那个东西
-（共享的可变状态、接口的第二份定义）。
-而且拿掉之后，**正确的写法同时也变成了最省事的写法**——
-这才是它们真正厉害的地方。
+What the two examples share: neither **added** a safeguard. Both **removed**
+the thing that let the error exist (shared mutable state, a second
+definition of the interface). And after the removal, **the correct way of
+writing it is also the least effortful way** — that is what actually makes
+them powerful.
 
-## 代码梯度
+## The code gradient
 
-「越好的做法越省力」听起来还是个感觉。它的可测量形式叫**代码梯度**：
+"The better the practice, the less effort" still sounds like a feeling. Its
+measurable form is the **code gradient**:
 
-怎么判断一段代码好不好？**不能只看它现在的样子，要看它周围。**
-对它做一点小改动，结果会变多糟？这就是它的梯度。
+How do you judge whether a piece of code is good? **Don't look only at how
+it is now. Look around it.** Make a small change to it — how bad do the
+consequences get? That is its gradient.
 
-- **梯度大 = singularity（奇点）。** 改一点点就可能出事。
-  这不是好代码，**哪怕它当前能跑、行为完全正确**——
-  它只是恰好停在了一个正确的点上，而它四周全是坑。
-- **梯度小 = 好代码。** 维护者几乎怎么作死都出不了大问题。
-  换句话说，**要把它弄坏，得很努力才行**。
+- **A steep gradient = a singularity.** Change a little and something may
+  break. This is not good code, **even if it currently runs and its behavior
+  is completely correct** — it merely happens to be sitting on a correct
+  point, and everywhere around it is a pit.
+- **A flat gradient = good code.** The maintainer can barely break anything
+  serious no matter how they abuse it. In other words, **breaking it takes
+  real effort**.
 
-**正确性是一个点上的性质，梯度是一片邻域上的性质。**
-只验收正确性，等于赌今后每个改它的人都不会走错半步。
-而代码一定会被改——被别人改，被三个月后的自己改，被 agent 改。
+**Correctness is a property of a point; the gradient is a property of a
+neighborhood.** Accepting only correctness is a bet that everyone who changes
+it later will never step half a step wrong. And code will be changed — by
+other people, by yourself three months later, by an agent.
 
-再看一遍 Next.js：不管开发者怎么作死，
-一个用户的数据流到另一个用户那里几乎是不可能的——
-除非数据库没开 RLS，**同时**代码里还有一个非常奇怪、非常显眼的取数 bug。
-要两件事一起踩中才出得了事，这就叫梯度小。
+Look at Next.js again: no matter how the developer abuses it, one user's data
+flowing to another user is nearly impossible — unless the database has no RLS
+**and** the code contains a very strange, very conspicuous data-fetching bug.
+Both have to be hit together before anything happens. That is a flat
+gradient.
 
-「让坏做法无法被表达」正是梯度的极限情形：
-在那个方向上，**根本不存在更糟的写法可走**。
+"Make the bad practice inexpressible" is exactly the limiting case of the
+gradient: in that direction, **there is no worse way of writing it to take**.
 
-所以 review 时该问的不是「这样写对不对」，而是：
+So the question to ask in review is not "is this written correctly". It is:
 
-> **在这个地方，一个不了解全部上下文的人最容易犯什么错？犯了会有多严重？**
+> **At this spot, what mistake is a person who doesn't know the full context
+> most likely to make? And how serious is it if they do?**
 
-如果答案是「很容易犯，而且会泄露数据」，那这段代码就有问题，
-哪怕它这一版完全正确。
+If the answer is "very easy to make, and it leaks data", the code has a
+problem, even if this version of it is completely correct.
 
-## 怎么用
+## How to use it
 
-先拿总的那把尺子量一下：
+First measure with the overall ruler:
 
-> **在这套设计里，最省力的那条路，是不是最好的那条路？**
+> **In this design, is the path of least effort the best path?**
 
-如果不是，那就是设计的问题，不是使用者不够自觉。
-这时候别去加规范、加检查清单、加培训——那是在要求人对抗默认值，
-成本要一直付，而且迟早会失守。**去改默认值本身。**
+If it isn't, that is a problem with the design, not with the user's lack of
+conscientiousness. Don't respond by adding rules, checklists, and training —
+that asks people to fight the default, the cost is paid forever, and it will
+eventually be lost. **Change the default itself.**
 
-碰到一类反复出现的问题，先别问「怎么防住它」，要问：
+When a class of problem keeps recurring, don't first ask "how do we guard
+against it". Ask:
 
-> **什么样的表示法，能让这个问题根本写不出来？**
+> **What representation would make this problem impossible to write?**
 
-常见的几条路子，本质都是做减法：
+The common routes are all, at bottom, subtraction:
 
-- **拿掉第二份真相。** 同一个事实只有一处定义，就没有「两处不一致」这种 bug。
-- **拿掉共享。** 拿不到的东西，就不会被弄脏。
-- **让非法状态无法构造。** 用类型和构造入口把它挡在外面，
-  而不是构造出来之后再校验。
-- **把可能失败的调用变成不会失败的调用。** 能在编译期或构造期确定的事，
-  就别留到运行期再判断。
-- **让好做法成为默认值。** 什么都不配置、照着最顺手的方式写，
-  得到的就该是正确、快、好读的那个版本。
+- **Remove the second source of truth.** When the same fact has exactly one
+  definition, there is no bug of the kind "the two places disagree".
+- **Remove sharing.** What you can't get at, you can't corrupt.
+- **Make illegal states unconstructable.** Keep them out with types and
+  construction entry points, rather than validating them after they have been
+  constructed.
+- **Turn a call that can fail into a call that cannot.** Anything decidable
+  at compile time or construction time should not be left to be judged at
+  runtime.
+- **Make the good practice the default.** Writing in the most convenient way,
+  configuring nothing, should produce the version that is correct, fast, and
+  readable.
 
-广义的 bug 同样适用，只是问法换一下：
-「怎么让这个交互不可能被用错？」（见 [产品与交互设计](../domain-mindsets/product-design.md)）、
-「怎么让这个慢查询写不出来？」、「怎么让这段逻辑不可能被放错地方？」
+The bug in the broad sense follows the same rule, with the question reworded:
+"how do I make this interaction impossible to misuse?" (see
+[product and interaction design](../domain-mindsets/product-design.md)),
+"how do I make this slow query impossible to write?", "how do I make it
+impossible to put this logic in the wrong place?"
 
-## 和其他原则的关系
+## Relation to the other principles
 
-- 这是 [事前设计优于事后救火](upfront-design.md) 里
-  「**bug 是不自然的**」那句话的展开：
-  认知对了，好做法就是自然的那个，坏做法自己就变得别扭。
-  能不能把谱线的分布掰过来，是检验抽象选对没选对的最好尺子。
-- 它和 [minimalism](minimalism.md) 的主张 5 是一体两面：
-  那条说「**不要为不可能发生的情况写分支**」，
-  这条说「**想办法让更多情况变成不可能**」。
-  设计得越好，能诚实删掉的防御性代码就越多。
+- This is the expansion of the sentence "**a bug is unnatural**" in
+  [upfront design beats firefighting](upfront-design.md): when the cognition
+  is right, the good practice is the natural one, and the bad practice
+  becomes awkward on its own. Whether you can bend the distribution of the
+  spectrum is the best ruler for whether the abstraction was chosen right.
+- It and claim 5 of [minimalism](minimalism.md) are two sides of one thing:
+  that one says "**don't write a branch for a case that cannot happen**",
+  and this one says "**find a way to make more cases impossible**". The
+  better the design, the more defensive code you can honestly delete.
 
-## 这条规范不是什么
+## What this rule is not
 
-- **不是不写错误处理。**
-  真实世界的失败——网络断了、磁盘满了、用户输入了乱七八糟的东西、
-  第三方接口返回了没见过的字段——永远存在，必须老老实实处理。
-  能被消灭的是**由自己的代码结构造成的那一类问题**，不是全部。
-  分不清这两类就照抄本条，得到的是第一档工程师的代码。
-- **不是为了消灭问题而堆类型体操和框架。**
-  如果「让坏做法写不出来」的代价是三层泛型和一套自制框架，
-  那是把复杂度从一处挪到了另一处，通常还是更糟的那一处。
-  第三档设计的标志是**东西变少了**，不是变多了。
-- **不是靠纪律和规范去要求人做好。**
-  需要人努力才能达标，本身就说明默认值设错了。
-  规范是最后的补丁，不是第一手段。
+- **It is not "don't write error handling".**
+  Real-world failures — the network drops, the disk fills up, the user types
+  nonsense, a third-party interface returns a field you've never seen —
+  always exist and must be handled honestly. What can be eliminated is **the
+  class of problem caused by your own code's structure**, not all of them.
+  Copying this rule without distinguishing the two gives you the code of a
+  first-grade engineer.
+- **It is not piling on type gymnastics and frameworks in order to eliminate
+  problems.** If the price of "making the bad practice unwritable" is three
+  layers of generics and a homegrown framework, you have moved the complexity
+  from one place to another, usually to the worse place. The mark of a
+  third-grade design is that **there is less**, not more.
+- **It is not relying on discipline and rules to make people do well.**
+  Needing people to exert effort to meet the bar is itself evidence that the
+  default is set wrong. A rule is the last patch, not the first means.

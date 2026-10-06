@@ -1,25 +1,29 @@
-# 小步提交
+# Small commits
 
-**一个提交只做一件事，标题一句话说得清。**
+**One commit does one thing, and the title says it in one sentence.**
 
-## 怎么做
+## How to do it
 
-- 重构和功能改动分开提交——混在一起的 diff 没法读。
-- 提交信息写**为什么这么改**，改了什么 diff 里已经有了。
-- 边做边提交，不要攒到最后。
+- Commit refactoring and feature changes separately — a diff that mixes them
+  can't be read.
+- The commit message says **why it was changed this way**. What changed is
+  already in the diff.
+- Commit as you go. Don't save it all up for the end.
 
-## 效果
+## Effect
 
-- 出问题时能单独回退它，不连累无关改动。
-- review 的人不会因为 diff 太大而直接放弃细看。
-- 中途被打断也不会丢掉已经完成的部分。
+- When something goes wrong, it can be reverted on its own, without dragging
+  unrelated changes along.
+- The reviewer doesn't give up on reading carefully because the diff is too
+  big.
+- Being interrupted halfway doesn't lose the part that is already done.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-拆得过碎会让历史里塞满「修个 typo」「再修个 typo」，
-反而看不出一件事是怎么完成的。
-**判据是「这个提交能不能用一句话说清、并且单独回退是安全的」**，
-不是「行数越少越好」。
+Splitting too finely fills the history with "fix a typo", "fix another typo",
+and you can no longer see how one thing was accomplished.
+**The criterion is "can this commit be stated in one sentence, and is
+reverting it on its own safe"**, not "the fewer lines the better".
 
-出自[代码是什么](../principles/what-is-code.md)：代码一直在被改，
-历史是给未来那些改动看的。
+From [what code is](../principles/what-is-code.md): code is constantly being
+changed, and the history is for those future changes to read.

@@ -1,45 +1,65 @@
-# 仓库要有「这是什么、为什么」
+# A repo needs "what this is, and why"
 
-**读代码读不出来的东西，要写下来，而且要写在两个地方：
-精简版进常驻文件（`AGENTS.md` / `CLAUDE.md`），全文进 `design/`。**
+**What cannot be read out of the code has to be written down, and written in
+two places: the short version in the always-loaded file (`AGENTS.md` /
+`CLAUDE.md`), and the full text in `design/`.**
 
-## 为什么分两处
+## Why two places
 
-- **常驻文件是每次都会加载的**，所以那里放的东西，AI **任何时候**都带着。
-  我们要的正是这个：让它一直有正确的认知，而不是等它想起来去查。
-  代价是它每次都占上下文，所以那里只能放**精简版**。
-- **完整的背景、上下文、设计哲学放 `design/`**，从常驻文件指过去。
-  这类东西和实现结构本来就对不上，塞进 docstring 只会让两边都难读
-  （见[文档与规范](../domain-mindsets/documentation.md)）。
+- **The always-loaded file is loaded every time**, so what is placed there,
+  the AI carries **at all times**. That is exactly what we want: it always
+  has the right cognition, rather than waiting until it remembers to go look.
+  The cost is that it occupies context every time, so only the **short
+  version** can go there.
+- **The full background, context, and design philosophy go in `design/`**,
+  pointed to from the always-loaded file. This kind of thing doesn't
+  correspond to the implementation's structure in the first place, and
+  stuffing it into a docstring makes both sides hard to read (see
+  [documentation](../domain-mindsets/documentation.md)).
 
-## 写什么
+When the reader who matters is the person judging the work, the full text
+can be the [living report](living-report.md), which puts it in the order a
+person judges in: eucalyptus's report replaced its design README. A precise
+contract that agents need gets its own note, linked from the page rather
+than restated in it.
 
-只写**读代码读不出来**的：
+## What to write
 
-- 这个东西**是什么**，定位到认知层面
-  （炫酷感还是熟悉感？新潮 AI 应用还是国民级基础设施？）
-- 为什么选了现在这个抽象，**当初否决过什么**
-- 边界：**什么不属于这个系统**
-- 哪些约束是真的，哪些只是历史遗留
+Write only what **cannot be read out of the code**:
 
-接口、流程、模块图都不该在这里——那些属于[贴着实现放](../domain-mindsets/documentation.md)的东西。
+- What this thing **is**, positioned at the level of cognition (flash or
+  familiarity? A trendy AI app or national-scale infrastructure?)
+- Why the current abstraction was chosen, and **what was rejected at the
+  time**
+- The boundary: **what does not belong to this system**
+- Which constraints are real, and which are only historical leftovers
 
-## 效果
+Interfaces, flows, and module diagrams don't belong here — those are the
+things that [sit next to the implementation](../domain-mindsets/documentation.md).
 
-「上下文不够就去问」是在要求人和 agent 自觉；
-**把上下文放在它们必经的路上，才是结构性的解法。**
+## Effect
 
-对 agent 是刚需：它拿不到这层认知就会按「最常见的写法」来，
-而最常见的几乎一定不是你要的那个——而且它会写得飞快、看起来还很自洽。
+"If the context isn't enough, go ask" requires conscientiousness from people
+and agents. **Putting the context on the path they must travel is the
+structural solution.**
 
-## 反效果与边界
+For an agent this is a hard requirement: without this layer of cognition it
+falls back on "the most common way of writing it", and the most common way is
+almost certainly not the one you want — and it will write it fast, and it
+will look self-consistent.
 
-- **它会过期，而过期的这类文档比没有更糟**——它讲的是「为什么」，
-  一旦错了，后面所有决定都会跟着错。
-  常驻文件里那份**必须小到能被顺手维护**；`design/` 里的也不是写完就锁进抽屉。
-- **别让 `design/` 变成文档仓库。** 它装的是认知和哲学，不是需求归档和会议纪要。
-- **写不出来是个信号**，说明这个仓库的目的本身还没想清楚，
-  那才是当下真正该解决的问题。
+## Counter-effects and boundaries
 
-出自[仓库是什么](../principles/what-is-a-repo.md)和
-[认知](../principles/cognition.md)。
+- **It goes stale, and this kind of document stale is worse than absent** —
+  it talks about "why", and once it is wrong, every later decision follows it
+  into the wrong. The copy in the always-loaded file **must be small enough
+  to be maintained in passing**; the one in `design/` is not written once and
+  locked in a drawer either.
+- **Don't let `design/` become a documentation warehouse.** It holds
+  cognition and philosophy, not an archive of requests and meeting notes.
+- **Being unable to write it is a signal** that this repo's purpose itself
+  hasn't been thought through yet, and that is the problem actually worth
+  solving right now.
+
+From [what a repo is](../principles/what-is-a-repo.md) and
+[cognition](../principles/cognition.md).

@@ -1,80 +1,101 @@
-# 技术选型
+# Technology choice
 
-**先问的还是那个问题：这个东西的「应然」是什么样子？**
+**The first question is still the same one: what "ought" this thing to look
+like?**
 
-技术选型不是挑工具，是**给「这东西是什么」找一个贴合它本性的形状**
-（见[认知](../principles/cognition.md)）。
-选型选错，往往不是因为选了个差工具，
-而是因为**没想清楚要做的东西是什么**，于是拿一个形状去套另一个形状。
+Choosing a technology is not picking a tool. It is **finding, for "what this
+thing is", a shape that fits its nature** (see
+[cognition](../principles/cognition.md)). A wrong choice is usually not the
+result of picking a bad tool. It is the result of **not having figured out
+what the thing being built is**, and then forcing one shape onto another.
 
-## 判据一：选那个「让好变成默认、让坏变得难受」的
+## Criterion one: pick the one that "makes good the default and makes bad uncomfortable"
 
-同一个需求，不同的技术栈会让**完全不同的一类错误变得不可能**
-（见[优秀是默认值](../principles/excellence-by-default.md)）：
+For the same request, different tech stacks make **entirely different classes
+of error impossible** (see
+[excellence is the default](../principles/excellence-by-default.md)):
 
-- **天然无状态的东西 → serverless。**
-  每个请求就在一个函数里，拿不到别人的状态，
-  一整类并发和状态污染的 bug 从此不可能发生。
-- **天然有状态的东西**（比如 persistent agent infra）**→ serverless 就不合适。**
-  硬套的结果是到处都要绕：外部状态存储、恢复逻辑、心跳、租约……
-  复杂度全花在**对抗工具**上，而不是解决问题上。
+- **Something naturally stateless → serverless.**
+  Each request lives inside one function and cannot get at anyone else's
+  state, so a whole class of concurrency and state-corruption bugs becomes
+  impossible.
+- **Something naturally stateful** (such as persistent agent infra) **→
+  serverless doesn't fit.** Forcing it means working around it everywhere:
+  external state storage, recovery logic, heartbeats, leases… all the
+  complexity is spent **fighting the tool** instead of solving the problem.
 
-所以选型时最有用的一个问题是：
+So the single most useful question when choosing:
 
-> **接下来我是在顺着它用，还是在绕着它用？**
+> **Am I about to use it with the grain, or work around it?**
 
-一开始就要绕，就是选错了。**别指望绕的地方会随时间变少，只会变多。**
+If you have to work around it from the start, the choice is wrong. **Don't
+expect the workarounds to shrink over time. They only grow.**
 
-## 判据二：选现代的，不选古早的
+## Criterion two: pick the modern, not the archaic
 
-理由不是新鲜，是**现代技术栈通常把「让错误无法被表达」内建进去了**：
-类型系统、单一定义（而不是前后端各写一份）、
-文档和 schema 从代码自动生成。
-古早技术栈把这些统统留给人的自觉——而自觉是会失守的。
+The reason is not novelty. It is that **a modern tech stack usually has
+"make the error inexpressible" built in**: a type system, a single
+definition (rather than the frontend and backend each writing one), docs and
+schemas generated automatically from the code. An archaic tech stack leaves
+all of this to people's conscientiousness — and conscientiousness eventually
+fails.
 
-还有一条现实理由：**现代主流技术栈在 AI 那里的资料更充分、惯例更一致**，
-AI 写出来的东西质量更稳、更少奇怪的老写法。
-在一个人和 AI 一起写代码的团队里，这不是小事。
+There is also a practical reason: **a modern mainstream tech stack has richer
+material and more consistent conventions on the AI's side**, so what the AI
+writes is more stable in quality and carries fewer strange old idioms. In a
+team where people and AI write code together, this is not a small thing.
 
-## 极度谨慎清单
+## The extreme-caution list
 
-下面这些，**除非绝对必要、并且说得出好理由，否则不要选**：
+The following, **unless absolutely necessary and you can state a good
+reason, don't choose**:
 
-- **任何和 Java 有关的技术栈。**
-- **任何基于裸 HTML / JavaScript / CSS 的技术栈。**
+- **Any tech stack related to Java.**
+- **Any tech stack based on bare HTML / JavaScript / CSS.**
 
-**第二条特别容易被误读，所以说清楚它到底排斥什么：**
+**The second is especially easy to misread, so here is exactly what it
+rejects:**
 
-| 排斥的 | 不排斥的 |
+| Rejected | Not rejected |
 | --- | --- |
-| 裸 HTML + 裸 CSS + 裸 JavaScript、jQuery 这类古早写法 | **Next.js 可以** |
-| | **TypeScript 可以** |
-| | **Tailwind CSS 可以** |
+| Bare HTML + bare CSS + bare JavaScript, and archaic styles like jQuery | **Next.js is fine** |
+| | **TypeScript is fine** |
+| | **Tailwind CSS is fine** |
 
-**这一条的目的是把古早的前端写法挡在外面，不是排斥 JavaScript 生态。**
-「带 JS」「支持 JS」不构成问题；
-问题在于那种没有类型、没有组件、没有单一定义、
-全靠人记住哪里改了要跟着改哪里的写法。
+**The purpose of this item is to keep archaic frontend styles out, not to
+reject the JavaScript ecosystem.** "Includes JS" or "supports JS" is not the
+problem. The problem is the style with no types, no components, no single
+definition, where a person has to remember that changing one place means
+changing another place along with it.
 
-**「绝对必要」怎么算数**：说得出具体理由（某个只有它有的能力、
-某个不可谈判的外部约束），并且**把这个理由写下来**——
-写进 `design/`，连同「什么条件下应该换掉它」
-（见[仓库要有「这是什么、为什么」](../practices/context-entry-point.md)）。
-说不出理由的「团队熟」「以前一直这么用」不算理由。
+**What counts as "absolutely necessary"**: you can state a concrete reason (a
+capability only it has, an external constraint that is not negotiable), and
+**you write that reason down** — into `design/`, together with "under what
+conditions it should be replaced" (see
+[a repo needs "what this is, and why"](../practices/context-entry-point.md)).
+"The team knows it" and "we've always used it", with no reason stated, don't
+count as reasons.
 
-## 其他要看的
+## Other things to look at
 
-- **文档能不能从代码生成**（见[文档与规范](documentation.md)）。
-- **测试能不能贴着实现放**（见[测试](testing.md)）。
-- **能不能靠类型和结构消灭一整类错误**，而不是靠约定和 review。
+- **Whether the docs can be generated from the code** (see
+  [documentation](documentation.md)).
+- **Whether tests can sit next to the implementation** (see
+  [testing](testing.md)).
+- **Whether types and structure can eliminate a whole class of error**,
+  rather than convention and review.
 
-熟悉度和热度排在这些之后。
+Familiarity and popularity rank after these.
 
-## 这条不是什么
+## What this is not
 
-- **不是唯新是从。** 判据是「它让哪一类错误变得不可能」，不是版本号新。
-  一个刚出生的框架把你锁进它的抽象里，同样是[绕着用](../principles/composition-over-configuration.md)。
-- **不是可以不管现实约束。**
-  客户指定、监管要求、必须复用的存量系统——这些都是真实的输入
-  （见[实事求是](../principles/seek-truth-from-facts.md)）。
-  清单挡的是「顺手就选了」，不是「想清楚之后仍然选了」。
+- **It is not following whatever is newest.** The criterion is "which class
+  of error does it make impossible", not how new the version number is. A
+  newborn framework that locks you inside its abstraction is equally
+  [working around it](../principles/composition-over-configuration.md).
+- **It is not permission to ignore real constraints.**
+  A client mandate, a regulatory requirement, an existing system that must be
+  reused — these are all real inputs (see
+  [seek truth from facts](../principles/seek-truth-from-facts.md)). The list
+  blocks "picked it because it was at hand", not "thought it through and
+  still picked it".

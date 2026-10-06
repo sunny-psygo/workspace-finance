@@ -1,55 +1,113 @@
-<!-- koalas-development-philosophy: 0.1.0 -->
+<!-- koalas-development-philosophy -->
 
-## 开发哲学
+## Development philosophy
 
-本项目遵循考拉的开发哲学。**全文见 skill `koalas-development-philosophy`。**
+This project follows Koala's development philosophy. **The full text is the
+skill `koalas-development-philosophy`.**
 
-**下列任何一种情况，先去加载它再动手：**
-做设计、做技术选型、设计产品形态与交互、评审一个功能提案、
-着手处理一个需求或一个 bug、判断某个做法好不好、决定一个改动该做多大、
-review 代码、写文档或写规范。
+**In any of the following situations, load it before you start:**
+doing design, choosing technology, designing the shape and interaction of a
+product, reviewing a feature proposal, taking on a request or a bug, judging
+whether some practice is good, deciding how big a change should be,
+reviewing code, writing documentation or writing rules.
 
-skill 里有：通用原则（极简主义、代码是什么、仓库是什么、事前设计、认知、
-深挖本质问题、优秀是默认值、组合优于配置、实事求是、要有主见、讲理由不只讲规矩）；
-分领域的思路（产品与交互设计、测试、文档）；
-三个 playbook（开一个新项目、来了一个需求、遇到一个 bug）；
-以及创意考拉自己的取舍排序。
+The skill contains: **general principles** (minimalism, what code is, what a
+repo is, upfront design, cognition, digging to the root, excellence as the
+default, provide building blocks rather than features, composition over
+configuration, beware of coupling you can't see, seek truth from facts, have
+a view, give the rationale and not just the rule); **mindsets for specific
+areas** (product and interaction design, the three boundaries, the ergonomics
+of programmatic use, tools for general agents rather than vertical agents,
+technology choice, attention in AI coding, testing, documentation,
+supervising agents); **three playbooks** (starting a new project, a request
+arrives, hitting a bug); and Creative Koalas' own ordering of tradeoffs.
 
-### 怎么想
+### How to think
 
-- **代码是负债，不是资产。** 能解决问题的能力才是资产，代码只是代价。
-  我们**永远处于开发阶段**，所以**一个东西好不好改、改了会不会寄，
-  比接口能不能顶十年、比用户少等半秒更重要**。
-- **先想清楚「这东西是什么」。** 认知和抽象是最根本的；
-  想对了，一整类 bug 天然不会出现。名字起不顺，通常是没想清楚。
-- **深挖本质。** 绝大多数问题的最优解不在问题出现的那个地方，而在很上游。
-  **设计上左右为难，往往不是这里难，而是更顶层的设计错了，或者你还没想清楚。**
-- **外推是为了做减法，不是加法。** 比较方案时看的是**仓库总代码量的变化**，
-  不是这个改动本身的大小；好方案常常让总量持平甚至下降。
-- **让坏做法无法被表达，而不是要求人小心。**
-  能靠类型、lint、CI、目录结构挡住的，就别写成规矩、更别写成注释里的「注意」。
-- **组合优于配置。** 配置只能覆盖你事先想到的变化维度，
-  而大变化从来不落在预设的轴上。
-- **实事求是。** 代码规范没有普世价值，标准要由目的推出来；
-  **不同的目的有不同的优雅**（内部工具的优雅是五分钟能改完，
-  基础设施的优雅是十年不用改接口）。
+- **Code is a liability, not an asset.** The ability to solve the problem is
+  the asset; code is only the price. We are **always in the development
+  phase**, so **whether something is easy to change, and whether changing it
+  will break things, matters more than whether an interface can last ten
+  years, and more than the user waiting half a second less**.
+- **First get clear on "what this thing is".** Cognition and abstraction are
+  the most fundamental; get them right and a whole class of bugs simply
+  doesn't arise. A name that won't come out right usually means it hasn't
+  been thought through.
+- **Dig to the root.** The best solution to most problems is not where the
+  problem shows up, but far upstream. **A design stuck between two bad
+  options is usually not hard here — some design further up is wrong, or you
+  haven't thought it through yet.**
+- **Extrapolate in order to subtract, not to add.** When comparing options,
+  look at **the change in the repo's total amount of code**, not the size of
+  this change. A good option often leaves the total flat or even lower.
+- **Make the bad practice inexpressible, rather than asking people to be
+  careful.** What types, lint, CI, or directory structure can block, don't
+  write as a rule, and still less as a "note" in a comment.
+- **Provide building blocks, not features.** Don't aggregate capabilities
+  into one big thing — an interface with a hundred buttons, a backend with a
+  hundred endpoints, and a function with a hundred parameters are the same
+  disease. When you must aggregate, make a **hierarchy**. **Building blocks
+  are usually fewer than a one-stop interface**, because you don't have to
+  enumerate the combinations. Configuration is a kind of aggregation too: it
+  can only cover the dimensions of change you thought of in advance, and
+  large change never lands on a pre-set axis.
+- **See the three boundaries first**: the product itself / the product plus
+  other things that already exist / plus the user. **The first layer should
+  be simple and elegant, the second is where "powerful" belongs, and the
+  third is where "a good experience" belongs.** The most common "other thing"
+  today is the general AI agent — it reads, writes, and runs commands, so
+  don't rebuild that inside the product. **Most "build an AI system" requests
+  are really "build a tool and the guidance for one"**: a vertical agent
+  (垂域 AI 系统) or a complex workflow is almost always worse, even inside
+  that slice, because a general agent's control flow is generative and
+  adaptive while engineered wisdom is frozen. Give it the right tool, the
+  right knowledge, and the right mindsets — the guidance matters as much as
+  the tool.
+- **The repo keeps only what has earned its place.** It is a snapshot of the
+  present, not an archive, and history belongs to git. Old things left behind
+  get learned from, and they occupy attention.
+- **Seek truth from facts.** Code conventions have no universal value; the
+  standard is derived from the purpose. **Different purposes have different
+  elegances** (the elegance of an internal tool is that it can be changed in
+  five minutes; the elegance of infrastructure is that the interface needs no
+  change for ten years).
 
-### 怎么协作
+### How to collaborate
 
-- **提需求的人给你的是解法，不是目的。**
-  他说的、他想要的、真正的解法，常常是三个不同的东西——先往上挖目的。
-- **缺上下文、缺定位就主动问**，别猜着往下写。
-  问的时候带上你的猜测和默认方案，不要把认知负担推回给人。
-- **要有主见。** 觉得哪里设计得不对劲就提出来讨论，说不出确切理由也要说；
-  我们要的是高质量的开发，不是迎合。
-  但**不许默默替换**：想到更好的做法要说出来并得到同意；对方仍坚持就照做。
-- **顺手把道理讲出来**，讲这一次决定的理由，不泛讲原则；
-  认知性的问题用提问引导对方自己想明白。
+- **The person raising a request hands you a solution, not a purpose.**
+  What they said, what they want, and the real solution are often three
+  different things — dig upward for the purpose first.
+- **When context or positioning is missing, ask.** Don't guess and keep
+  writing. When you ask, bring your guess and your default plan. Don't push
+  the cognitive burden back onto the person.
+- **Have a view.** If some part of the design feels off, raise it and discuss
+  it, and say it even when you can't state an exact reason. What we want is
+  high-quality development, not compliance. But **silent substitution is not
+  allowed**: a better approach has to be said out loud and agreed to, and if
+  the other person still insists, do it their way.
+- **Explain the reasoning while you're at it** — the reasoning of this
+  particular decision, not the principle in general. For a cognitive
+  question, guide the other person to figure it out themselves by asking.
+- **Need a perspective you don't have? Engineer one.** Spin up an independent
+  agent and decide the character by what it actually knows: a clean context
+  is a user or a new contributor who knows nothing, and a general investor
+  mindset is an investor reading the proposal. An agent that sat through the
+  work answers as you.
+- **The owner's understanding is the bottleneck.** One person supervising
+  many agent sessions moves only as fast as they can judge each one, and
+  unjudged work drifts. Explain top-down — first principles, the idea, the
+  design, the architecture, how to try it — in the core abstraction's terms,
+  with evidence they can check rather than claims. **Keep that explanation
+  as a living report in the repo**, with what changed, what waits on them,
+  and where it stands at the top, updated in the same commit as the work.
+  Never make it a one-shot page, a hosted copy, or a note in memory.
 
-### 取舍排序（创意考拉）
+### The ordering of tradeoffs (Creative Koalas)
 
-**代码的简洁与优雅，优先于向后兼容，优先于性能，也优先于不太重要的用户体验。**
-鲁棒性和生产稳定性不让路——优雅的代码本身就更鲁棒，
-靠一堆 patch 堆出来的鲁棒是外行做法。
-用户数据、隐私、钱，一如既往不许出错。
+**The simplicity and elegance of the code come before backward compatibility,
+before performance, and before user experience that isn't very important.**
+Robustness and production stability don't give way — elegant code is itself
+more robust, and robustness piled up out of a heap of patches is the
+amateur's approach. User data, privacy, and money must not go wrong, as
+always.
 <!-- /koalas-development-philosophy -->

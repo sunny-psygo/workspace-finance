@@ -1,53 +1,75 @@
-# Playbook：开一个新项目
+# Playbook: starting a new project
 
-## 步骤
+## Steps
 
-1. **先想清楚「这是什么、为什么」，把目的定义到认知层面**：
-   要给用户炫酷感还是熟悉感？定位是新潮的 AI 应用还是国民级基础设施？
-   什么**不**属于它？
-   写不出来就别开工——那说明要做的东西还没想清楚。
+1. **First get clear on "what this is, and why", and define the purpose at
+   the level of cognition**: flash or familiarity for the user? Positioned as
+   a trendy AI app or as national-scale infrastructure? What does **not**
+   belong to it? If you can't write it down, don't start — that means the
+   thing to be built hasn't been thought through yet.
 
-   写两处：**精简版直接进 `AGENTS.md`**（它是常驻的，
-   我们要的就是 AI 任何时候都带着正确的认知），
-   **完整的背景、上下文、设计哲学进 `design/`**，从 `AGENTS.md` 指过去
-   （见[仓库要有「这是什么、为什么」](context-entry-point.md)）。
+   Write it in two places: **the short version goes straight into
+   `AGENTS.md`** (it is always loaded, and what we want is exactly that the
+   AI carries the right cognition at all times), and **the full background,
+   context, and design philosophy go into `design/`**, pointed to from
+   `AGENTS.md` (see
+   [a repo needs "what this is, and why"](context-entry-point.md)).
 
-2. **找这件事的通用形态。** 不要问「怎么实现这个需求」，问「这东西是什么」：
-   PPT 是一组图片；codex 和 Claude Code 是通用的智能执行者，只是缺顺手的工具。
-   **先看能不能借已有的通用能力，自己只补那块缺的**——
-   这一步决定了后面是写一百行还是一万行。
+2. **Find the general form of the thing.** Don't ask "how do I implement this
+   request". Ask "what is this thing": a slide deck is a set of images; Codex
+   and Claude Code are general intelligent executors that merely lack a
+   convenient tool. **First see whether you can borrow a general capability
+   that already exists and only supply the missing piece yourself** — this
+   step decides whether what follows is a hundred lines or ten thousand.
 
-3. **定第一个版本：能端到端跑通的最小闭环。**
-   不是功能列表里的第一项，是「从头到尾能用」的最短路径。
-   闭环之后你对这东西的认知会变，那时候再决定第二步做什么。
+3. **Draw the three boundaries, and list the usable "other things"**: the
+   product itself / the product plus other things that already exist / plus
+   the user (see
+   [the three boundaries](../domain-mindsets/three-boundaries.md)). Ask first:
+   what does the user already have in hand? Do a general agent, make, git,
+   and the browser count as reachable? **What can land on the second layer
+   should not be built into the first** — the first layer does only the thing
+   nobody else can do and nobody will do for you.
 
-4. **选型先问「这东西的应然是什么样子」**，再挑工具：
-   选那个让好变成默认、让坏变得难受的，
-   并且随时自检「我是在顺着它用，还是在绕着它用」。
-   熟悉度和热度排在最后（见[技术选型](../domain-mindsets/tech-choice.md)）。
+4. **Set the first version: the smallest loop that runs end to end.**
+   Not the first item on a feature list, but the shortest path that "works
+   from start to finish". Once the loop closes, your cognition of the thing
+   will change, and that is when you decide what the second step is.
 
-5. **先把生产资料搭好。** 骨架至少是这些：
+5. **Choosing technology starts with "what ought this thing to look like"**,
+   and only then the tool: pick the one that makes good the default and makes
+   bad uncomfortable, and keep checking yourself on "am I using it with the
+   grain, or working around it". Familiarity and popularity come last (see
+   [technology choice](../domain-mindsets/tech-choice.md)).
+
+6. **Set up the means of production first.** The skeleton is at least this:
 
    ```
-   AGENTS.md          目的与认知的精简版 + 指向 design/ 的 pointer
-   CLAUDE.md          -> AGENTS.md（软链接；Codex 读前者，Claude Code 读后者）
-   design/            背景信息、上下文、认知、设计哲学的全文
-   .agents/skills/     这个仓库自己的 skill（空目录先放 .gitkeep）
-   .claude/skills     -> ../.agents/skills（软链接，一份内容两个 agent 都读得到）
+   AGENTS.md          the short version of the purpose and the cognition + a pointer to design/
+   CLAUDE.md          -> AGENTS.md (a symlink; Codex reads the former, Claude Code the latter)
+   design/            the full text of the background, context, cognition, and design philosophy
+   design/report.html the living report for the owner, updated with every piece of work
+   .agents/skills/    this repo's own skills (an empty directory gets a .gitkeep first)
+   .claude/skills     -> ../.agents/skills (a symlink, so one body of content is read by both agents)
    ```
 
-   再加上 CI、格式化、类型检查。
-   **这是让好的做法成为默认值最便宜的时刻**，以后再补要贵十倍
-   （见[优秀是默认值](../principles/excellence-by-default.md)）。
+   Plus CI, formatting, and type checking. The report starts with the first
+   piece of work (see [keep a living report](living-report.md)).
+   **This is the cheapest moment to make the good practice the default.**
+   Adding it later costs ten times as much (see
+   [excellence is the default](../principles/excellence-by-default.md)).
 
-6. **把「不做什么」写下来。** 边界写清楚，后面每次有人提「顺便也支持一下」，
-   你才有东西可以对照。
+7. **Write down "what we are not doing".** With the boundary written clearly,
+   you have something to check against every later time someone proposes
+   "let's support this too while we're here".
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **最大的风险是变成开工前的大设计。**
-  第 1 步那一页和第 3 步的最小闭环，加起来应该在一两天内完成；
-  超了就是在纸上做产品，不是在想清楚。
-- **第 2 步找不到通用形态时不要硬凑。**
-  想不出来就先按最直白的方式做，但把这件事记下来——
-  通用形态往往在做完第一个闭环之后才浮现。
+- **The biggest risk is turning into a grand design before any work starts.**
+  That one page from step 1 and the smallest loop from step 4 should together
+  be done within a day or two. Beyond that, you are building the product on
+  paper, not thinking it through.
+- **When step 2 can't find the general form, don't force one.**
+  If you can't think of it, do it in the most straightforward way for now,
+  but write the fact down — the general form often surfaces only after the
+  first loop is closed.

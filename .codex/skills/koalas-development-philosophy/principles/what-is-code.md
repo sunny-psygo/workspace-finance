@@ -1,94 +1,119 @@
-# 代码是什么
+# What code is
 
-写代码之前，先想清楚**代码本身是什么**——这是所有认知里最该先想明白的那个
-（见[认知：给事物下定义的能力](cognition.md)）。
+Before writing code, get clear on **what code itself is** — of all the
+things to define, this is the one to get right first
+(see [cognition: the ability to define things](cognition.md)).
 
-两条，任何时候都要同时握在手里：
+Two claims, and you have to hold both at once, always:
 
-1. **代码是手段，不是目的。** 它是为了达成目的而必须付出的成本。
-2. **代码是发展的，不是写完就放在那里。** 它会一直被改。
+1. **Code is a means, not an end.** It is the cost you have to pay to reach
+   the goal.
+2. **Code is developing, not something you write and then leave sitting
+   there.** It keeps getting changed.
 
-绝大多数糟糕的工程决定，都是把其中一条忘了。
+Most bad engineering decisions are one of these two forgotten.
 
-## 一、代码是手段：所以它是负债
+## 1. Code is a means: so it is a liability
 
-**能解决问题的能力才是资产，代码只是获得它的代价。**
-所以买到同样的能力，当然是付得越少越好；
-每多一行代码，账上多的不是资产，是负债。
+**The ability to solve the problem is the asset; code is only the price of
+getting it.** So buying the same ability means paying as little as possible.
+Every extra line adds a liability to the books, not an asset.
 
-这笔负债还要一直付利息：
+And that liability keeps paying interest:
 
-- **理解成本。** 每个部件都要被后来的人和 agent 重新读懂一遍。
-- **出错面。** 没写的代码不会有 bug，没引入的依赖不会有 CVE。
-- **修改成本。** 部件之间会互相牵连，改动成本随部件数量的增长快于线性。
-  多余的抽象和配置项尤其致命：它们把「改一处」变成「改一处并验证所有组合」。
+- **Cost of understanding.** Every part has to be re-understood by the next
+  person and the next agent.
+- **Surface area for bugs.** Code you never wrote cannot have a bug; a
+  dependency you never introduced cannot have a CVE.
+- **Cost of change.** Parts drag each other along, and the cost of a change
+  grows faster than linearly with the number of parts. Superfluous
+  abstractions and config options are especially lethal: they turn "change
+  one place" into "change one place and verify every combination".
 
-在 AI 时代这笔账更贵：agent 和人一样受限于一次能读进多少上下文。
-仓库里多余的东西会同时拖慢两边——而且每一次改动都要重付一遍。
+In the AI era this account is more expensive: an agent, like a person, is
+limited by how much context it can read at once. Extra material in the repo
+slows both sides at the same time — and every change pays the cost again.
 
-直接的推论：**「这个 PR 写了多少」是错的度量**，
-**删代码是还债，是收益，不是损失。**
+The direct corollary: **"how much did this PR write" is the wrong metric.**
+**Deleting code pays down debt. It is a gain, not a loss.**
 
-## 二、代码是发展的：所以要按「还要改一千次」来评价
+## 2. Code is developing: so judge it as if it will be changed a thousand times
 
-**「开发完了进入维护期」的时代已经过去了，
-「软件写完就躺着赚钱」的时代更是早就过去了。**
-现代公司永远在往前走，新功能永远在开发中。**我们永远处于开发阶段。**
+**The era of "development is done, now we enter maintenance" is over, and
+the era of "write the software and then lie back and collect money" ended
+long before that.** A modern company is always moving forward, and new
+features are always in development. **We are always in the development
+phase.**
 
-所以评价一段代码，不能按「它现在能不能跑」来评，
-要按「它还要被改一千次，这一千次会有多贵」来评。
-代码写完的那一刻，它的成本才刚开始计。
+So you cannot judge a piece of code by "does it run right now". Judge it by
+"it will be changed a thousand more times — how expensive will those
+thousand times be?" The moment the code is written, its cost has only just
+started.
 
-### 推论一：让坏做法无法被表达，比什么时候都重要
+### Corollary one: making bad practice inexpressible matters more than ever
 
-**我们付不起 debug 的成本。**
-永远在开发，意味着永远在往一个正在跑的系统里塞新东西；
-靠「出了问题再查」来维持质量，在这种节奏下是纯粹的亏损。
-唯一划算的做法是把问题挡在出生之前——
-这就是[优秀是默认值](excellence-by-default.md)为什么是硬需求，而不是一种追求。
+**We cannot afford the cost of debugging.**
+Always being in development means always pushing new things into a system
+that is already running. Maintaining quality by "wait until something breaks,
+then investigate" is a pure loss at that pace. The only approach that pays
+is stopping the problem before it is born — which is why
+[excellence is the default](excellence-by-default.md) is a hard requirement,
+not an aspiration.
 
-### 推论二：不要「对扩展开放，对修改封闭」
+### Corollary two: don't be "open to extension, closed to modification"
 
-传统的 OCP（open to extension, closed to modification）在今天是错的。
-它的前提是「已有代码不该被动」，于是每次变化都只能靠**加一层**来吸收：
-加一个子类、加一个策略、加一个适配器、加一个开关。
-每次都合规，每次都不碰老代码，
-然后你就得到了一个谁也不敢删、谁也说不清全貌的系统——
-正是 [minimalism](minimalism.md) 里的两种退化模式在合力工作。
+The traditional OCP (open to extension, closed to modification) is wrong
+today. Its premise is "existing code should not be touched", so every change
+can only be absorbed by **adding a layer**: a subclass, a strategy, an
+adapter, a switch. Each one complies, each one leaves the old code alone,
+and then you have a system nobody dares to delete and nobody can describe in
+full — exactly the two modes of decay in [minimalism](minimalism.md) working
+together.
 
-我们要的是：
+What we want is:
 
-> **对扩展开放，对修改也开放（open to both extension AND modification）。**
+> **Open to extension, and open to modification (open to both extension AND
+> modification).**
 
-**目标不是让代码不必被改，而是让改它这件事本身又安全又便宜。**
+**The goal is not to make the code need no changes. It is to make changing
+it both safe and cheap.**
 
-- 要改它的行为，是去**改那段代码**，还是只能在外面**再套一层**？
-  只能套一层的，说明它已经僵住了。
-- **删掉一个功能，容易吗？** 加功能容易而删功能困难的系统，注定只会越长越大。
-- 改完之后，**怎么知道没搞坏别的地方**？
-  答案如果是「靠小心」，那这段代码的[梯度](excellence-by-default.md)太大了。
+- To change its behavior, do you **edit that code**, or can you only **wrap
+  another layer around it**? If wrapping is the only option, it has already
+  stiffened.
+- **Is deleting a feature easy?** A system where adding is easy and deleting
+  is hard is destined to only ever grow.
+- After the change, **how do you know you didn't break something else?**
+  If the answer is "by being careful", the
+  [gradient](excellence-by-default.md) of that code is too steep.
 
-## 两条必须一起用
+## The two must be used together
 
-只记住第一条，会写出**极简但僵硬**的代码：当下最省，以后动不了。
-只记住第二条，会为「未来的变化」提前造扩展点和配置项——
-那正是 [minimalism](minimalism.md) 说的 features before necessity。
+Remembering only the first produces code that is **minimal but rigid**:
+cheapest today, immovable later. Remembering only the second builds
+extension points and config options ahead of time for "future change" —
+which is exactly the features-before-necessity that
+[minimalism](minimalism.md) warns about.
 
-合在一起才是完整的目标：
+Together they are the complete goal:
 
-> **用尽量少的代码，换尽量高的可改性。**
+> **Trade as little code as possible for as much modifiability as possible.**
 
-这两件事绝大多数时候不矛盾，反而互为因果：
-代码越少，牵连越少，越好改；抽象越准，要改的地方越集中。
-真觉得它们冲突的时候，通常是抽象没选对
-（见[深挖本质问题](dig-to-the-root.md)：左右为难往往是上层的问题）。
+Most of the time the two don't conflict; they cause each other. Less code
+means fewer entanglements, which means easier to change; a more accurate
+abstraction means the places you have to change are more concentrated. When
+they genuinely seem to conflict, the abstraction is usually the wrong one
+(see [dig to the root](dig-to-the-root.md): being stuck between two bad
+options is usually a problem one level up).
 
-## 怎么用
+## How to use it
 
-- **写之前先算总账**：这段代码接下来要被改多少次？
-  只写一次就再也不动的代码几乎不存在。
-- **能靠删代码满足的需求，就别靠加代码满足。**
-- **别用「以后再重构」给自己贷款。** 永远处于开发阶段，
-  意味着永远没有那个空出来的「以后」。
-- **评审时看的是负债，不是产出。**
-  该问的是「这个 PR 让以后的每次改动贵了多少，还是便宜了多少」。
+- **Before writing, total the account**: how many times will this code be
+  changed? Code that is written once and never touched again barely exists.
+- **A request you can satisfy by deleting code, don't satisfy by adding
+  code.**
+- **Don't lend yourself "we'll refactor later".** Always being in the
+  development phase means there is never that free "later".
+- **In review, look at the liability, not the output.**
+  The question to ask is "did this PR make every future change more
+  expensive, or cheaper?"

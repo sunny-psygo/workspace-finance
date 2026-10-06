@@ -1,64 +1,88 @@
-# 测试
+# Testing
 
-**测试的目的是让代码不出错——至少不出大错。**
-测试本身没有价值，它是手段。所以先问的永远是「怎样才能不出错」，而不是「怎么多写点测试」。
+**The purpose of testing is to keep the code from going wrong — at least from
+going badly wrong.** Testing has no value in itself. It is a means. So the
+first question is always "how do we keep it from going wrong", not "how do we
+write more tests".
 
-## 理想是不需要测试
+## The ideal is needing no tests
 
-按[深挖本质问题](../principles/dig-to-the-root.md)：
-一个 bug 最好的解决位置，不是测试用例，是让它**压根无法发生**。
+Per [dig to the root](../principles/dig-to-the-root.md): the best place to
+solve a bug is not a test case. It is making the bug **simply unable to
+happen**.
 
-所以第一顺位永远是设计：**让错误无法被表达**，
-至少让**重大错误**（数据泄露、扣错钱）难以被表达
-（见[优秀是默认值](../principles/excellence-by-default.md)）。
-serverless 拿不到别人的状态、Next.js 后端只有一处定义——
-这些结构消灭掉的 bug，比任何测试套件挡住的都多。
+So the first priority is always design: **make the error inexpressible**, or
+at least make **serious errors** (data leaks, charging the wrong amount) hard
+to express (see
+[excellence is the default](../principles/excellence-by-default.md)).
+Serverless can't get at anyone else's state; a Next.js backend has exactly
+one definition — the bugs these structures eliminate outnumber anything any
+test suite blocks.
 
-**用测试去堵一个本可以靠设计消灭的错误，是次优解。**
-现实中当然有靠设计消不掉的部分，下面四条讲的就是这部分怎么办。
+**Using a test to plug an error that design could have eliminated is a
+second-best solution.** In practice there is of course a part that design
+cannot eliminate, and the four points below are about what to do with that
+part.
 
-## 一、写测试要克制
+## 1. Write tests with restraint
 
-**测试的性质决定了它和实现必然耦合**，也就必然把同一件事表达两遍。
-这和前后端接口对不上、文档和实现对不上是同一类问题
-（见[文档与规范](documentation.md)），而且测试还是**更难维护的那种代码**。
+**The nature of a test means it is necessarily coupled to the implementation**,
+and so it necessarily expresses the same thing twice. This is the same kind
+of problem as the frontend and backend interfaces not matching, or the docs
+and the implementation not matching (see
+[documentation](documentation.md)), and tests are the **harder-to-maintain
+kind of code**.
 
-**加一个测试，不只是加一个测试，是加一笔债**：
-以后每次改实现，都要手动把它跟着改一遍。
-而我们[永远处于开发阶段](../principles/what-is-code.md)——
-代码一直在变，这笔债就一直在滚。
+**Adding a test is not just adding a test. It is taking on a debt**: every
+later change to the implementation has to be followed by manually changing
+the test along with it. And we are
+[always in the development phase](../principles/what-is-code.md) — the code
+keeps changing, so this debt keeps rolling.
 
-## 二、投入产出比要算
+## 2. The return has to be weighed against the cost
 
-**正确性和鲁棒性都要适度，不是越多越好。**
+**Both correctness and robustness should be moderate, not maximized.**
 
-- **涉及钱、涉及隐私的逻辑，必须不出错。**
-  但注意：这种地方**更安全的做法是让它不可能错，而不是用测试去堵**——
-  测试只能覆盖你想到的用例，结构性的约束覆盖全部。
-- **无伤大雅的行为不必滴水不漏**：按钮什么颜色、点赞数几秒刷新一次。
-  为这些追求绝对正确，成本全花在了不重要的地方。
+- **Logic involving money or privacy must not go wrong.**
+  But note: the **safer** approach in such a place is to make it impossible
+  to go wrong, not to plug it with tests — a test can only cover the cases
+  you thought of, while a structural constraint covers all of them.
+- **Harmless behavior doesn't need to be watertight**: what color a button
+  is, how many seconds between refreshes of a like count. Pursuing absolute
+  correctness for these spends the entire cost on things that don't matter.
 
-随时问一句：**加这个测试，值当吗？**
+Keep asking: **is adding this test worth it?**
 
-## 三、优先写 high-level 的测试
+## 3. Prefer high-level tests
 
-集成测试最 high-level，单元测试最 low-level。**优先前者。**
+Integration tests are the most high-level, unit tests the most low-level.
+**Prefer the former.**
 
-- **越 high-level，离目的越近**：它测的是「这件事能不能办成」，
-  而这正是你真正在乎的东西。它和实现耦合轻，实现改了也大多不用动。
-- **越 low-level，离实现越近**：耦合重，实现一改就得跟着改，
-  很容易变成 maintenance hell——**测试没在保护你，是你在养它**。
+- **The more high-level, the closer to the purpose**: it tests "can this
+  thing actually be accomplished", which is exactly what you really care
+  about. It couples lightly to the implementation, and most changes to the
+  implementation don't require touching it.
+- **The more low-level, the closer to the implementation**: the coupling is
+  heavy, a change to the implementation drags the test along with it, and it
+  easily becomes maintenance hell — **the test isn't protecting you, you are
+  feeding it**.
 
-用[代码梯度](../principles/excellence-by-default.md)来说：
-low-level 测试让整个代码库的梯度变大了，因为动一点点就有一堆测试跟着红。
+In terms of the [code gradient](../principles/excellence-by-default.md):
+low-level tests steepen the gradient of the whole codebase, because moving a
+little turns a pile of tests red.
 
-单元测试不是不能写，是**留给那些逻辑复杂、边界多、又确实值得单独钉死的地方**。
+Unit tests are not forbidden. They are **reserved for places where the logic
+is complex, the boundaries are many, and it is genuinely worth pinning down
+on its own**.
 
-## 四、测试要离被测的东西尽可能近
+## 4. Keep a test as close as possible to the thing it tests
 
-理由和「[对实现的描述要贴着实现放](documentation.md)」完全一样：
-**离得越近，越难发散，也越清楚改了什么要跟着改什么。**
+The reason is exactly the same as
+"[a description of the implementation sits next to the implementation](documentation.md)":
+**the closer it is, the harder it is to diverge, and the clearer it is what
+has to change along with what.**
 
-Rust 的测试系统是个好例子——测试就写在被测代码旁边，
-改实现的时候不可能看不见它。
-选型和组织代码时，优先能做到这一点的方式。
+Rust's test system is a good example — the test is written right beside the
+code it tests, so you cannot fail to see it while changing the
+implementation. When choosing technology and organizing code, prefer the
+approach that can do this.

@@ -1,75 +1,97 @@
-# 实事求是
+# Seek truth from facts
 
-**代码规范没有普世价值。** 任何做法的好坏，都取决于**这东西到底是干什么的**。
-切忌教条主义——这条对开发成立，对创业同样成立。
+**Code conventions have no universal value.** Whether any practice is good or
+bad depends on **what this thing is actually for**. Beware of dogmatism —
+this holds for development, and it holds for starting a company too.
 
-## 每一条「规范」都有代价
+## Every "convention" has a cost
 
-- **向后兼容**：会让代码逐渐臃肿。
-  外面的世界变了，你连技术栈都不敢更新。
-  而一个内部用的工具**根本不需要向后兼容**——在那里死守兼容性，是纯亏。
-- **「生产级」「鲁棒性」**：意味着复杂性，
-  而且经常把系统推向 closed to modification，越来越难改
-  （见[代码是什么](what-is-code.md)）。
-- **函数式、OOP、AOP、各种设计模式**：都不是通用准则，各有各的适用范围。
+- **Backward compatibility**: it makes the code gradually bloated. The world
+  outside changes, and you don't even dare to update the tech stack. And a
+  tool used internally **needs no backward compatibility at all** — clinging
+  to compatibility there is a pure loss.
+- **"Production-grade", "robustness"**: they mean complexity, and they often
+  push the system toward closed to modification, harder and harder to change
+  (see [what code is](what-is-code.md)).
+- **Functional programming, OOP, AOP, the various design patterns**: none of
+  them is a universal criterion. Each has its own range of applicability.
 
-所以**「它符合规范」本身不构成理由**。
-该问的是：**这条规范在这里买到了什么？付出了什么？这个代价，这个项目付得起吗？**
+So **"it conforms to the convention" is not itself a reason.**
+The question to ask is: **what does this convention buy here? What does it
+cost? Can this project afford that cost?**
 
-## 根子还是认知
+## The root is still cognition
 
-能做取舍的前提，是先想清楚**目的、定位、为什么**
-（见[认知](cognition.md)和[仓库是什么](what-is-a-repo.md)里
-「目的要定义到认知层面」）。
+The precondition for making a tradeoff is first getting clear on **the
+purpose, the positioning, the why**
+(see [cognition](cognition.md) and "the purpose has to be defined at the
+level of cognition" in [what a repo is](what-is-a-repo.md)).
 
-**盲目追求代码规范，本质上是用别人的答案代替自己的思考。**
-别人的答案是在别人的目的下推出来的，换个目的就不成立了。
+**Blindly pursuing code conventions is, at bottom, substituting someone
+else's answer for your own thinking.** Someone else's answer was derived
+under someone else's purpose, and it stops holding when the purpose changes.
 
-## 无我
+## No-self
 
-一个成熟的开发者，阅尽了各种语言、各种框架、各种设计模式之后，
-反而会进入一种「无我」的状态：**不再抓着自己的技术栈**，
-而是回到原点——回到认知，回到目的。
+A mature developer, after having seen every kind of language, every kind of
+framework, every kind of design pattern, instead enters a state of
+"no-self": **no longer clutching their own tech stack**, but returning to the
+origin — back to cognition, back to the purpose.
 
-技术栈、范式、模式，都从「身份」退回成「工具」。
-这时候他才真正开始做设计，而不是在套用。
+Tech stacks, paradigms, and patterns all retreat from "identity" back into
+"tools". Only then do they truly start designing, rather than applying
+templates.
 
-## 回到目的，不是需求驱动
+## Returning to the purpose is not demand-driven
 
-这里要说清楚：**回到目的和需求驱动恰恰相反。**
-需求是零散的、表面的诉求；目的是认知层面的定义
-（见[事前设计优于事后救火](upfront-design.md)）。
+This needs saying clearly: **returning to the purpose is precisely the
+opposite of being demand-driven.** A request is a scattered, surface-level
+appeal; the purpose is a definition at the level of cognition
+(see [upfront design beats firefighting](upfront-design.md)).
 
-**回到目的、回到认知，最终是回到优雅、回到美。**
+**Returning to the purpose and to cognition is, in the end, returning to
+elegance and to beauty.**
 
-## 实事求是与优雅，是一体两面
+## Seeking truth from facts and elegance are two sides of one thing
 
-**不同的目的，有不同的优雅。**
+**Different purposes have different elegances.**
 
-- 一个内部工具的优雅，是「五分钟能改完，坏了不影响别人」。
-- 一个基础设施的优雅，是「十年不用改接口，所有人都能靠住它」。
+- The elegance of an internal tool is "it can be changed in five minutes, and
+  breaking it affects nobody else".
+- The elegance of a piece of infrastructure is "the interface needs no change
+  for ten years, and everyone can rely on it".
 
-同一条兼容性规矩，在前者是负担，在后者是命脉。
-所以实事求是不是优雅的对立面，它是通向优雅的那条路：
+The same compatibility rule is a burden in the first and a lifeline in the
+second. So seeking truth from facts is not the opposite of elegance. It is
+the road that leads to it:
 
-> **从「目的」推导出「在这里什么才算优雅」的这种思考能力，本身就是一种优雅。**
+> **The ability to think your way from "the purpose" to "what counts as
+> elegant here" is itself a kind of elegance.**
 
-这就是「道」。
+That is the way.
 
-## 怎么用
+## How to use it
 
-- **用一条规范之前，先说出它在这里买到了什么。** 说不出来就别用。
-- **换个定位重问一遍**：如果这是个只用三个月的内部工具，答案会变吗？
-  如果这是要撑十年的基础设施呢？答案一变，说明你刚才是在照搬。
-- **「大家都这么做」「这是业界最佳实践」不是理由。**
-- **允许同一个组织里不同仓库有不同标准。** 目的不同，标准本就该不同。
+- **Before applying a convention, first say what it buys here.** If you can't
+  say it, don't apply it.
+- **Re-ask under a different positioning**: if this were an internal tool
+  used for only three months, would the answer change? If this were
+  infrastructure meant to last ten years? If the answer changes, you were
+  copying just now.
+- **"Everyone does it this way" and "this is industry best practice" are not
+  reasons.**
+- **Allow different repos in the same organization to have different
+  standards.** Different purposes mean the standards should differ.
 
-## 这条规范不是什么
+## What this rule is not
 
-- **不是给「随便写」找借口。**
-  实事求是要求的思考量比照抄规范**大得多**：
-  照抄只要记住，实事求是要论证。
-- **不是否定经验和成熟模式。**
-  它们是**候选方案**，不是律令（见[讲理由，不只讲规矩](rationale-over-rules.md)）。
-- **不是不要标准。**
-  是标准必须**由目的推出来**，而不是从别处搬过来。
+- **It is not an excuse for "write whatever".**
+  Seeking truth from facts demands **far more** thinking than copying a
+  convention: copying only requires memorizing, seeking truth from facts
+  requires arguing.
+- **It does not reject experience and mature patterns.**
+  They are **candidate solutions**, not edicts (see
+  [give the rationale, not just the rule](rationale-over-rules.md)).
+- **It is not "have no standards".**
+  It is that standards must be **derived from the purpose**, not carried over
+  from somewhere else.

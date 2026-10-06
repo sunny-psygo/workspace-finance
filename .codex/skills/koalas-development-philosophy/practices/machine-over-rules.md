@@ -1,39 +1,49 @@
-# 能交给机器管的，就别写成规矩
+# What a machine can enforce, don't write as a rule
 
-**一条约定如果能靠类型、lint、CI、模板或目录结构保证，就不要把它写成文档里的规矩。**
+**If a convention can be guaranteed by types, lint, CI, a template, or
+directory structure, don't write it as a rule in a document.**
 
-## 怎么做
+## How to do it
 
-想加一条规矩之前，按这个顺序找替代：
+Before adding a rule, look for a substitute in this order:
 
-1. **类型**——让违反的写法编译不过。
-2. **lint / CI**——让违反的写法合不进来。
-3. **模板、脚手架、默认配置**——让正确的写法是最省事的那条路。
-4. **目录结构**——让东西只能放在对的地方。
-5. 以上都做不到，才写成规矩。
+1. **Types** — make the violating way of writing fail to compile.
+2. **Lint / CI** — make the violating way of writing fail to merge.
+3. **Templates, scaffolding, default configuration** — make the correct way
+   of writing the path of least effort.
+4. **Directory structure** — make things only placeable in the right place.
+5. Only when none of the above can do it, write it as a rule.
 
-## 效果
+## Effect
 
-规矩要求每个人每次都自觉对抗默认值，成本一直付，而且迟早失守；
-交给机器，它就成了免费的、不会忘的默认值。
-**对 agent 尤其有效**：它不会记得你的规范，但它会被 CI 挡住。
+A rule asks every person to conscientiously fight the default every time. The
+cost is paid continuously, and it is eventually lost. Handed to a machine, it
+becomes a default that is free and never forgets.
+**This is especially effective on an agent**: it won't remember your rules,
+but CI will stop it.
 
-## 注释里的「小心」是最弱的护栏
+## A "careful" in a comment is the weakest guardrail
 
-`# 注意：改这里要同步改 X` 这种注释，本质上和写在文档里的规矩是一回事：
-它要求每个路过的人都看见、看懂、并且照做。
+A comment like `# note: changing this means changing X in sync` is, at
+bottom, the same thing as a rule written in a document: it asks everyone who
+passes by to see it, understand it, and comply.
 
-**错了代价大的地方（泄露数据、丢数据、花钱），别用注释警告，用结构挡住**：
-把危险的能力收进一个只有一处入口的地方，让错误的用法根本调不到。
-其余地方不必如此——护栏本身也有成本。
+**Where being wrong is expensive (leaking data, losing data, spending
+money), don't warn with a comment. Block it with structure**: gather the
+dangerous capability into a place with exactly one entry point, so the wrong
+usage simply cannot be called. Everywhere else this isn't necessary — the
+guardrail itself has a cost.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **别为了消灭一条规矩去造一个框架。** 护栏的成本必须小于它挡住的损失，
-  否则就是把复杂度从文档挪进了代码。
-- **管不了的别硬管。** 判断力、取舍、设计品味这类东西机器管不了，
-  硬做成检查项只会得到一堆能通过检查的烂设计。
-- **机器管的东西也要能被推翻**：留一个明确的绕过方式，
-  否则遇到例外时人会去绕更远的路。
+- **Don't build a framework in order to eliminate one rule.** The cost of the
+  guardrail must be smaller than the loss it blocks, or you have moved the
+  complexity out of the document and into the code.
+- **Don't force what can't be governed.** Judgment, tradeoffs, and taste in
+  design are things a machine cannot govern, and forcing them into checks
+  only produces a pile of bad designs that pass the checks.
+- **What the machine governs has to be overridable**: leave an explicit way
+  around it, or people will take a much longer detour when they hit an
+  exception.
 
-出自[优秀是默认值](../principles/excellence-by-default.md)。
+From [excellence is the default](../principles/excellence-by-default.md).

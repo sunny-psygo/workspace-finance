@@ -1,107 +1,138 @@
-# 仓库是什么
+# What a repo is
 
-**仓库不是在维护一个软件包——那样理解格局太小。
-仓库是一个为了某个目的而存在的工作空间。**
+**A repo is not the maintenance of a software package — that reading is too
+small. A repo is a workspace that exists for some purpose.**
 
-它存的不是狭义的「产品」，而是**目的本身，以及为这个目的所做的一切**。
+What it stores is not "the product" in the narrow sense. It stores **the
+purpose itself, and everything done for that purpose**.
 
-## 仓库里装着四样东西
+## A repo holds four things
 
-| | 是什么 | 例子 |
+| | What it is | Examples |
 | --- | --- | --- |
-| **产品** | 狭义的产品代码 | 应用、库、服务 |
-| **生产背景** | 为什么做、做的到底是什么 | 上下文、认知、设计哲学 |
-| **生产资料** | 生产产品所需要的结构 | 工具包、CI/CD、测试代码、agent skills、AI 提示词 |
-| **生产方法论** | 认知与哲学层面的做事方式 | 开发哲学、skills、哲学级的文档 |
+| **The product** | Product code in the narrow sense | Apps, libraries, services |
+| **The production background** | Why we do it, and what it actually is | Context, cognition, design philosophy |
+| **The means of production** | The structure needed to produce the product | Tooling, CI/CD, test code, agent skills, AI prompts |
+| **The method of production** | How the work is done, at the level of cognition and philosophy | Development philosophy, skills, philosophy-level docs |
 
-这解释了很多本来看着杂乱的现象：为什么仓库里要放设计哲学、要放背景信息、
-要放 CI/CD、要放 skills、要放提示词——它们都不是「产品」，
-但它们全都服务于同一个目的。
-也解释了 monorepo 这种范式为什么会被发明出来：
-**同一个目的下的东西，本来就不该被人为拆散。**
+This explains a lot of things that otherwise look messy: why a repo holds
+design philosophy, background, CI/CD, skills, and prompts. None of them is
+"the product", and all of them serve the same purpose.
+It also explains why the monorepo pattern was invented:
+**things under the same purpose were never supposed to be split apart by
+hand.**
 
-## 目的要定义到认知层面
+## The purpose has to be defined at the level of cognition
 
-**「这是 xxx 的客户端」不是定义，是标签。** 它指导不了任何一个具体决定。
+**"This is the client for xxx" is not a definition. It is a label.** It
+guides no concrete decision.
 
-目的要做**认知层面**的定义——把设计哲学和产品哲学写进去
-（见[认知：给事物下定义的能力](cognition.md)）。也就是要回答这类问题：
+The purpose needs a definition at the **level of cognition** — write the
+design philosophy and the product philosophy into it
+(see [cognition: the ability to define things](cognition.md)). That means
+answering questions like these:
 
-- 一个客户端：你希望它给用户一种**炫酷感**，还是一种**熟悉感**？
-- 它的定位是一个**新潮的 AI 应用**，还是一个像微信那样的**国民级基础设施**？
-- 一个工具：它是一个**本身有智能的完备系统**，
-  还是一个**依赖 codex / Claude Code 的智能、自己只做机械动作**的工具？
+- For a client: do you want it to give the user a sense of **flash**, or a
+  sense of **familiarity**?
+- Is its position a **trendy AI app**, or **national-scale infrastructure**
+  like WeChat?
+- For a tool: is it a **complete system that is itself intelligent**, or a
+  tool that **borrows the intelligence of Codex / Claude Code and only does
+  the mechanical work itself**?
 
-这些答案听起来很虚，但它们是**每天几十个小决定的默认值**：
-一个动效加不加、一个报错怎么措辞、一个能力自己实现还是交给上游、
-一个边界情况兜不兜。
+These answers sound vague, but they are **the defaults behind the dozens of
+small decisions made every day**: whether to add an animation, how to word
+an error, whether to implement a capability yourself or hand it upstream,
+whether to cover an edge case.
 
-**它们会潜移默化地影响开发者——人和 AI 都一样——的心态**，
-进而影响代码的行为，影响最终的用户体验，
-最终体现为用户反馈回来多少不满、系统跑得快不快。
-没有这层定义，每个人按自己的默认值来，产品会在没人察觉的情况下长成一个四不像。
+**They quietly shape the mindset of the people developing it — humans and
+AI alike** — and from there the behavior of the code, and from there the
+experience the user ends up with, which finally shows up as how much
+dissatisfaction comes back and how fast the system runs.
+Without this layer of definition, everyone applies their own defaults, and
+the product grows into something that is neither one thing nor the other
+without anyone noticing.
 
-**对 AI 尤其重要。** agent 没拿到这层认知，就会按「最常见的写法」来——
-而最常见的，几乎一定不是你要的那个。
+**This matters even more for AI.** An agent that never received this layer
+of cognition falls back on "the most common way of writing it" — and the
+most common way is almost certainly not the one you want.
 
-怎么写才算数：
+What makes a definition count:
 
-- **要能用来否决一个方案。** 一句话如果推翻不了任何一个 PR、一个设计，
-  那它只是漂亮话，不是定义。
-- **多用对照，少用形容词。**「炫酷 vs 熟悉」这样的对照，
-  比「优秀的用户体验」有用一万倍。
-- **写清楚「不是什么」。** 边界的信息量通常比正面描述更大。
+- **It has to be able to reject a proposal.** A sentence that cannot overturn
+  a single PR or a single design is a nice phrase, not a definition.
+- **Prefer contrasts over adjectives.** A contrast like "flash vs.
+  familiarity" is ten thousand times more useful than "an excellent user
+  experience".
+- **Write down what it is not.** The boundary usually carries more
+  information than the positive description.
 
-## 开发是整个工作空间的演化
+## Development is the evolution of the whole workspace
 
-**开发远不止是对产品的开发。**
-产品、生产背景、生产资料、生产方法论，四样都在不断发展
-（见[代码是什么](what-is-code.md)：一切都是发展的，没有「做完」这回事）。
+**Development is far more than developing the product.**
+The product, the production background, the means of production, and the
+method of production are all developing
+(see [what code is](what-is-code.md): everything is developing; there is no
+such thing as "done").
 
-所以：
+So:
 
-- **四样都要进版本控制，都要维护，都要 review。**
-  提示词和 skill 写坏了，和代码写坏了一样会出事，而且更难察觉。
-- **目的和它的认知定义要一直维护。** 只留手段不留目的，
-  工作空间会慢慢忘记自己为什么存在
-  （见[文档与规范](../domain-mindsets/documentation.md)：抽象是目的，具体是手段）。
-- **判断一个东西该不该进这个仓库，问的是「它服不服务于这个目的」，
-  而不是「它算不算产品代码」。**
+- **All four go into version control, all four are maintained, all four are
+  reviewed.** A broken prompt or skill causes damage just like broken code,
+  and it is harder to notice.
+- **The purpose and its cognitive definition have to be maintained.** Keep
+  only the means and drop the purpose, and the workspace slowly forgets why
+  it exists (see [documentation](../domain-mindsets/documentation.md): the
+  abstraction is the purpose, the concrete is the means).
+- **Whether something belongs in this repo is "does it serve this purpose",
+  not "does it count as product code".**
 
-## 任何时刻，仓库里只有 earned its place 的东西
+## At any moment, the repo holds only what has earned its place
 
-**仓库是当下的快照，不是档案馆。历史记录交给 git。**
+**The repo is a snapshot of the present, not an archive. History belongs to
+git.**
 
-git 已经完整保存了每一版，而且随时翻得出来。
-所以「先留着，万一以后要用」根本不是保险，
-它是把成本转嫁给之后每一个读这个仓库的人和 agent：
+Git already keeps every version in full, and any of them can be retrieved at
+any time. So "leave it for now, in case we need it later" is not insurance
+at all. It shifts the cost onto every person and agent who reads the repo
+afterward:
 
-- 他们得先判断这东西**还算不算数**——而且常常判断不出来。
-- 他们会**照着它学**。旧写法就是这样繁殖的，AI 尤其照单全收。
-- 它照样出现在搜索结果里、出现在 AI 的上下文里，**占掉注意力预算**
-  （见[AI coding 的注意力](../domain-mindsets/attention.md)）。
+- They first have to judge whether the thing **still counts** — and often
+  they cannot tell.
+- They will **learn from it**. That is how old ways of writing reproduce,
+  and AI takes them in wholesale.
+- It still shows up in search results and in the AI's context, **spending
+  the attention budget** (see [attention in AI coding](../domain-mindsets/attention.md)).
 
-判据还是那一条：**它现在服不服务于这个仓库的目的？** 不服务，就删掉。
+The criterion is still the same one: **does it serve this repo's purpose
+right now?** If it doesn't, delete it.
 
-**删掉不等于丢掉**——`git log`、`git revert` 随时能找回来。
-删除的成本几乎为零，留着的成本每天都在付。
+**Deleting is not losing it** — `git log` and `git revert` can bring it back
+any time. The cost of deletion is nearly zero; the cost of keeping it is
+paid every day.
 
-确实要长期存在、但不该被注意的东西（构建产物、vendored 的第三方代码），
-用**机制**排除：`.gitignore`、独立目录、不进版本库——
-而不是留在那儿再写一句「这个不用看」。
+Things that genuinely have to exist long-term but should not be noticed
+(build artifacts, vendored third-party code) are excluded by a **mechanism**:
+`.gitignore`, a separate directory, staying out of the repository — not by
+leaving them there with a note that says "don't look at this".
 
-## 怎么用
+## How to use it
 
-- **先说得出这个仓库的目的是什么**，而且要说到认知层面。
-  只说得出一句标签的，那它还只是一堆文件。
-- **生产资料值得投入。** 花时间把工具、CI、skills、提示词做顺手，
-  收益会摊到之后的每一次开发上——这是[以少换多](minimalism.md)最划算的地方之一。
-- **仓库边界按目的划，不按技术栈划。**
-  目的相同的东西放一起（哪怕语言不同），目的不同的东西分开（哪怕技术栈一样）。
+- **First be able to say what this repo's purpose is**, and say it at the
+  level of cognition. If all you can say is a label, it is still just a pile
+  of files.
+- **The means of production are worth investing in.** Time spent making the
+  tools, CI, skills, and prompts smooth pays back across every later round
+  of development — one of the best bargains in
+  [getting more from less](minimalism.md).
+- **Draw repo boundaries by purpose, not by tech stack.**
+  Things with the same purpose live together (even in different languages);
+  things with different purposes stay apart (even on the same stack).
 
-## 这条规范不是什么
+## What this rule is not
 
-**不是「什么都往里塞」。**
-判据是服不服务于这个目的，不是「反正放着也不碍事」——
-[minimalism](minimalism.md) 在这里照样管用：
-一个不服务于目的的东西进了仓库，就成了所有人都要绕开的噪音。
+**It is not "stuff everything in".**
+The criterion is whether it serves this purpose, not "it doesn't hurt to
+leave it lying around" — [minimalism](minimalism.md) applies here too: a
+thing that serves no purpose, once inside the repo, becomes noise everyone
+has to route around.

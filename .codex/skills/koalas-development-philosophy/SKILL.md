@@ -1,294 +1,524 @@
 ---
 name: koalas-development-philosophy
-description: 考拉的开发哲学：设计与工程的通用判断依据，以及分领域的思路和具体做法。涵盖极简主义、代码是什么（手段与负债、永远处于开发阶段）、仓库是什么（为某个目的存在的工作空间，含生产背景、生产资料与方法论；目的要定义到认知层面；只留 earned its place 的东西，历史交给 git）、事前设计优于事后救火、认知与给事物下定义的能力、深挖本质问题（左右为难往往是上层设计错了）、优秀是默认值（让好的自然、坏的不自然、代码梯度）、组合优于配置、当心看不见的耦合（概念层与用户预期层的隐性耦合）、实事求是（规范无普世价值、不同目的有不同的优雅）、要有主见（AI 不该盲从指令：他说的、他想要的、真正的解法常常是三个东西；对「不对劲」的直觉要说出来讨论）、讲理由不只讲规矩；创意考拉（公司）自己的取舍排序（简洁优雅优先于向后兼容与性能）；以及产品与交互设计、技术选型（应然优先、让好成为默认、选现代不选古早、Java 与裸前端极度谨慎）、AI coding 的注意力（attention chain：指针链与每一环的描述）、测试（克制、优先集成测试、靠设计而非测试保证正确）、文档（对实现的描述贴着实现放、能生成就生成；上下文与设计哲学单独成册并长期维护；一律求短）、以及可直接执行的做法（开新项目/来了需求/遇到 bug 三个 playbook、先确认限制是真的再造变通方案、缺信息就主动问、顺手把道理讲出来并用提问引导人思考、引导人主动给出目的与认知层面的上下文、新增前先说清取代了什么、一切要链回常驻文件、仓库要有「这是什么为什么」（精简版进常驻文件、全文进 design/）、同一件事解释第二次就写进仓库、同类问题第二次不许就地修、能交给机器管的别写成规矩、文档与测试跟实现改在同一个提交里、小步提交）。首次在一个仓库里被加载时，还要确认该仓库的 CLAUDE.md / AGENTS.md 是否已装入常驻内容 always-loaded.md（Claude Code 只读 CLAUDE.md，Codex 只读 AGENTS.md）。在动手写代码之前想设计、做技术选型与取舍、设计产品形态与交互、评审功能提案、判断一个做法好不好、决定一个改动该做多大、review 代码、写文档写规范、提交代码，或需要在没有明文规定的情况下拿主意时使用。
+description: Koala's development philosophy — the general basis of judgment for design and engineering, plus mindsets for specific areas of work and concrete practices. Covers minimalism (two modes of decay — features before necessity, and building too literally; extrapolate in order to subtract, and after extrapolating there should be less code), what code is (a means and a liability; we are always in the development phase; open to both extension and modification), what a repo is (a workspace that exists for a purpose, holding the product, the production background, the means of production, and the method of production; the purpose defined at the level of cognition; only what has earned its place stays, history belongs to git), upfront design over firefighting afterward, cognition and the ability to define things, digging to the root (being stuck between two bad options usually means a design further up is wrong), excellence as the default (make the good natural and the bad unnatural; the code gradient and singularities), providing building blocks rather than features (avoid unnecessary aggregation, aggregate as a hierarchy when you must, build to use; code is part of product design, and AI and developers are first-class users), composition over configuration, beware of coupling you can't see (implicit coupling at the concept layer and the user-expectation layer), seeking truth from facts (conventions have no universal value; different purposes have different elegances), having a view (AI should not follow instructions blindly — what they said, what they want, and the real solution are often three different things; say the intuition that something is off and discuss it), giving the rationale and not just the rule; Creative Koalas' (the company's) own choices (the ordering of tradeoffs — simplicity and elegance before backward compatibility and performance; programmatic first — every capability has an elegant programmatic interface, and the interface is designed before the UI); plus product and interaction design, the three boundaries (the product / the product plus other existing things / plus the user; the first layer simple, the second powerful, the third a good experience), building tools for general agents rather than vertical agents (垂域 AI 系统) or complex workflows — a general agent beats a hand-engineered one even inside the vertical slice, because its behavior emerges and its control flow is generative, reactive, and adaptive, the way deep networks beat hand-engineered features, and engineered wisdom is almost always worse than online adaptation; but today's general agents lack creativity, so give them the right tool, the right knowledge, and the right mindsets, and the guidance (a skill) is as important as the tool, as Chameleon does, the ergonomics of programmatic use (CLI, API, and library calls all count; structured first, rendering as its own layer, make guessing right the default, an error is an instruction to the agent, output size under control), technology choice (what it ought to be comes first, make good the default, pick modern over archaic, extreme caution with Java and bare frontends), attention in AI coding (the attention chain — a chain of pointers with a description at every link), testing (restraint, prefer integration tests, guarantee correctness by design rather than by tests), documentation (descriptions of the implementation sit next to the implementation and are generated when they can be; context and design philosophy get their own volume and are maintained over time; all of it stays short), supervising agents (when one person supervises many agent sessions, the owner's understanding and judgment is the bottleneck, and unjudged work drifts — deviations get written down as "limitations" and nobody sees them; so explain top-down, first principles → the idea behind the design → the design → the implementation architecture → how to try it yourself, in the core abstraction's terms rather than the implementation's, make every decision decidable with a worked example and a default, give evidence the owner can check rather than claims, and write for a peer rather than a student), and directly executable practices (three playbooks — starting a project, a request arriving, hitting a bug; confirm a constraint is real before building a workaround; ask when information is missing; explain the reasoning while you're at it and guide people to think by asking questions; guide people to volunteer purpose and cognition-level context; before adding, say what it replaces; everything chains back to the always-loaded file; a repo needs "what this is and why" — the short version in the always-loaded file, the full text in design/; keep a living report for the owner in the repo — what changed since the last report, what needs them, where it stands, then the system from first principles to trying it yourself, updated in the same commit as the work, with numbers generated and commands run as printed, never a one-shot page, a hosted copy, or a note in memory; explain the same thing a second time and it goes into the repo; the second occurrence of the same kind of problem may not be fixed in place; what a machine can enforce, don't write as a rule; docs and tests change in the same commit as the implementation; small commits; use independent agents with engineered context to get a perspective you don't have — a clean context simulates a user or new contributor who knows nothing and shows whether the product is usable and the code understandable, and injecting a general investor mindset simulates an investor reading a business proposal; the character comes from what the agent actually knows, not from a label, and the result is evidence rather than a vote). The first time it is loaded on a machine, also check whether the user-level always-loaded file (Claude Code reads ~/.claude/CLAUDE.md, Codex reads ~/.codex/AGENTS.md) already @-imports this skill's always-loaded.md, and if not, ask once and then add it; leave a project's CLAUDE.md / AGENTS.md alone by default, and never write a machine-local path into a git-tracked file. Use it before writing code when thinking about design, making technology choices and tradeoffs, designing product shape and interaction, reviewing a feature proposal, judging whether a practice is good, deciding how big a change should be, reviewing code, writing docs or rules, committing, reporting to the person supervising the work (a status report, a final summary, a question for them to decide), or having to decide where nothing is written down.
 ---
 
-# 考拉的开发哲学
+# Koala's development philosophy
 
-来自古法编程时代的设计智慧，结合 AI 时代的新形势。
-**同时写给人和 AI**：两边照同一套标准做事。
+Design wisdom from the era of programming by hand, joined to the new
+situation of the AI era. **Written for people and for AI at once**: both
+sides work to the same standard.
 
-## 三层，按抽象程度组织
+## Three layers, organized by degree of abstraction
 
-| 层 | 放什么 |
+| Layer | What goes there |
 | --- | --- |
-| **通用原则**（下面七条） | 最抽象，不限语言不限领域，处处适用 |
-| 分领域的思路（`domain-mindsets/`） | 针对某一类工作该怎么想、怎么权衡 |
-| 具体做法（`practices/`） | 可以直接照着执行的约定 |
+| **General principles** (below) | The most abstract. Not limited to a language or a domain. They apply everywhere |
+| Mindsets for specific areas (`domain-mindsets/`) | How to think, and how to weigh tradeoffs, for one kind of work |
+| Concrete practices (`practices/`) | Conventions you can follow directly |
 
-**越抽象的越重要**：授人以鱼不如授人以渔。
-条文能穷举的部分恰恰最不值钱，真实情况总会跑到它覆盖不到的地方，
-那时唯一还能用的是判断力。所以后两层都是第一层的推论，
-**冲突时以更抽象那层的意图为准**。
+**The more abstract, the more important**: better to teach someone to fish
+than to hand them a fish. The part a rule can enumerate is exactly the least
+valuable part. Reality always runs somewhere the rule doesn't cover, and the
+only thing still usable then is judgment. So the latter two layers are
+corollaries of the first, and **when they conflict, the intention of the more
+abstract layer wins**.
 
-**所有条文都是建议，不是律令。** 读的人要读出它想解决什么问题，
-而不是把它当成必须打勾的清单。
-条文和它自己的意图冲突时，按意图做，然后回来把条文改对。
+**Every item is advice, not an edict.** The reader has to read out the
+problem it is trying to solve, rather than treating it as a checklist that
+must be ticked. When an item conflicts with its own intention, follow the
+intention, then come back and fix the item.
 
-## 先做一件事：让这段哲学在这个仓库里常驻
+## Do one thing first: make this philosophy always present
 
-skill 是**按需加载**的（只有 `name` 和 `description` 常驻），
-而「动手之前先想清楚」这类事，等你意识到该加载它的时候，往往已经开始写了。
-所以最重要的几条要进**每次都会加载**的文件。
+A skill is **loaded on demand** (only the `name` and `description` are always
+present), and things like "think it through before you start" are usually
+already underway by the time you realize you should have loaded it. So the
+most important items have to go into a file that is **loaded every time**.
 
-> **常驻内容当前版本：`0.1.0`**　正文见 [always-loaded.md](always-loaded.md)，
-> 首尾各有一个 `koalas-development-philosophy` marker。
+**The judgment**: is the marker `koalas-development-philosophy` in the
+context? If it is → do nothing. If it isn't → install it.
 
-**先判断**（不用打开 `always-loaded.md`）：上下文里没有那个 marker，
-或者版本号不是 `0.1.0` → 装上或更新；否则什么都不用做。
+**How to install: add it to the user-level always-loaded file** — Claude Code
+reads `~/.claude/CLAUDE.md`, Codex reads `~/.codex/AGENTS.md`. Add it to
+whichever exists; if both are in use, add it to both, this one line:
 
-**做法**：把 `always-loaded.md` 全文**连同两个 marker** 贴进仓库的常驻文件。
-更新时整段替换两个 marker 之间的内容，不分改动大小。
+```markdown
+@<the directory this skill lives in>/always-loaded.md
+```
 
-贴进哪个文件——**Codex 读 `AGENTS.md`，Claude Code 读 `CLAUDE.md`**：
+You are reading `SKILL.md`, so you know where this directory is. Fill it in
+(installed by the `skills` CLI, it is generally at
+`~/.agents/skills/koalas-development-philosophy/`).
+**Import it rather than pasting it**, so the content has exactly one source
+of truth: after the skill updates it takes effect automatically, with no
+synchronization step of any kind.
 
-- 有哪个就贴哪个；两个都有就都贴，
-  但先确认它们不是同一个文件（一个是另一个的软链接时，贴一次就够）。
-- 两个都没有：内容放 `AGENTS.md`，再 `ln -s AGENTS.md CLAUDE.md`，
-  **一份内容两个 agent 都读得到**——本仓库自己就是这么做的。
+This step changes a file **outside any repo**, belonging to this machine, so
+**ask once before doing it**.
 
-这件事顺手做掉就行，不必专门问；但它改的是仓库里的文件，
-所以要像别的改动一样让人看见。
+### By default, don't touch a project's `AGENTS.md` / `CLAUDE.md`
 
-> 两个 agent 各读什么，核实于 2026-08，依据 code.claude.com/docs 的 memory 文档
-> 与 learn.chatgpt.com/docs/agent-configuration/agents-md。对不上时以实际行为为准。
+They go into git. Writing an import pointing at `~/` or `/Users/…` into one
+looks fine on your machine, and **for coworkers and CI it is a silently dead
+`@`** — no error, the content is simply never there (see
+[everything chains back to the always-loaded file](practices/chain-back-to-always-loaded.md):
+writing it and not hanging it up is worse than not writing it, because you
+believe it is doing its job).
 
-## 通用原则
+**Hard rule: an `@` written into a git-tracked file must use a repo-relative
+path, and must not contain `~` or `/Users/`.**
 
-每条给主张、理由，和足够判断「该不该读全文」的钩子；论证在各自的文件里。
+A project-level import holds in exactly one situation: **this skill's content
+is actually inside that repo** (a submodule, or the copy installed by
+`skills add` without `-g`). Only then does it really mean something — it
+carries coworkers and CI along too. But that is **a change to the repo's
+structure, which is a person's decision**: you may propose it, and do it
+after getting agreement.
 
-### 极简主义
+If you see a project file that already contains an import pointing at a
+machine-local path, that is a leftover from before this rule. Delete it and
+switch to the user-level installation above. A whole body of text pasted in
+gets the same treatment — it diverges from upstream.
 
-**能完整解决问题的最小方案，就是最好的方案。**
-代码库退化只有两种模式：**features before necessity**（需求还没来就先上功能），
-以及 **build too literally**（只盯着眼前、缺什么补什么）。
-后者更隐蔽，还特别容易拿极简当挡箭牌——一堆各自最小的局部改动，
-加起来完全可以是一个极其臃肿的整体。
-所以再具体的需求也要外推一层去找通用而优雅的设计：
-**外推是为了做减法，不是做加法，外推之后代码应该变少。**
-一天写一万行、上一百个功能不是本事；用一百行、十个功能干掉它们才是。
+## General principles
+
+Each one gives the claim, the reason, and enough of a hook to judge "should I
+read the full text"; the argument lives in its own file.
+
+### Minimalism
+
+**The smallest solution that fully solves the problem is the best solution.**
+A codebase decays in only two patterns: **features before necessity** (the
+feature ships before the need has arrived), and **build too literally**
+(stare only at what is in front of you, and patch whatever is missing). The
+second is stealthier, and especially easy to hide behind minimalism — a pile
+of locally minimal changes can add up to a grossly bloated whole. So even a
+very specific request gets pushed one level up, to find the general and
+elegant design: **extrapolate in order to subtract, not to add, and after
+extrapolating there should be less code.** Writing ten thousand lines and
+shipping a hundred features in a day is not skill. Doing their job with a
+hundred lines and ten features is.
 → [principles/minimalism.md](principles/minimalism.md)
 
-### 代码是什么
+### What code is
 
-两条要同时握住：**代码是手段不是目的**——能力才是资产，代码只是代价，
-所以它是负债，利息是理解成本、出错面、修改成本；
-**代码是发展的，不是写完就放着**——「开发完进入维护期」的时代已经过去，
-我们永远处于开发阶段，所以别再「对扩展开放、对修改封闭」（OCP 逼着人
-每次靠加一层吸收变化，加出来的就是没人敢动的系统），要对修改也开放。
-只记第一条会写出极简但僵硬的代码，只记第二条会提前造扩展点；
-合起来是：**用尽量少的代码，换尽量高的可改性。**
+Two claims to hold at once: **code is a means, not an end** — the ability is
+the asset and the code is only the price, so it is a liability, and the
+interest is the cost of understanding, the surface area for bugs, and the
+cost of change; **code is developing, not something you write and leave** —
+the era of "development done, now maintenance" is over, we are always in the
+development phase, so stop being "open to extension, closed to modification"
+(the OCP forces people to absorb every change by adding a layer, and what
+gets added is a system nobody dares to touch) — be open to modification too.
+Remembering only the first produces code that is minimal but rigid;
+remembering only the second builds extension points ahead of time. Together:
+**trade as little code as possible for as much modifiability as possible.**
 → [principles/what-is-code.md](principles/what-is-code.md)
 
-### 仓库是什么
+### What a repo is
 
-**仓库不是在维护一个软件包，是一个为某个目的而存在的工作空间。**
-它装的是目的本身，以及为这个目的所做的一切：产品、生产背景（上下文、认知、
-设计哲学）、生产资料（工具、CI/CD、测试、skills、提示词）、生产方法论。
-这解释了设计哲学和提示词为什么该进仓库，也解释了 monorepo 为什么会出现。
-所以**开发是整个工作空间的演化**，四样都要维护、都要 review。
-而且**任何时刻，仓库里只能有 earned its place 的东西——它是当下的快照，
-不是档案馆，历史记录交给 git**：留着的东西别人判断不出还算不算数，
-还会照着它学，并且照样占掉注意力预算。
-而目的**要定义到认知层面**——「这是 xxx 的客户端」是标签不是定义；
-炫酷感还是熟悉感、新潮 AI 应用还是国民级基础设施，
-这些才是每天几十个小决定的默认值，人和 AI 都受它影响。
+**A repo is not the maintenance of a software package. It is a workspace that
+exists for some purpose.** It holds the purpose itself, and everything done
+for that purpose: the product, the production background (context, cognition,
+design philosophy), the means of production (tools, CI/CD, tests, skills,
+prompts), and the method of production. This explains why design philosophy
+and prompts belong in the repo, and why the monorepo exists. So **development
+is the evolution of the whole workspace**, and all four are maintained and
+reviewed. And **at any moment the repo holds only what has earned its place —
+it is a snapshot of the present, not an archive, and history belongs to
+git**: what is left behind, people can't tell whether it still counts, they
+learn from it, and it spends the attention budget all the same. And the
+purpose **has to be defined at the level of cognition** — "this is the client
+for xxx" is a label, not a definition; flash or familiarity, a trendy AI app
+or national-scale infrastructure, these are the defaults behind the dozens of
+small decisions made every day, and they shape both people and AI.
 → [principles/what-is-a-repo.md](principles/what-is-a-repo.md)
 
-### 事前设计优于事后救火
+### Upfront design beats firefighting
 
 **Easy choices, hard life; hard choices, easy life.**
-这里的设计指**抽象**（这东西是什么、天然该长什么样），不是模块结构和技术栈——
-先画模块图定技术栈，等于没想清楚造什么就开工。
-所以开发不是需求驱动而是技术驱动，需求驱动最终会变成屎山；
-好的开发者有一种关于事物「应然」的直觉，它先于需求。
-「优雅」正是这种与业务无关的美，而美意味着**更可能是对的**
-（Solomonoff induction：越短的程序先验概率越高）。
-全文里有一个完整例子：把「AI 自动做 PPT」想成图片构建系统，
-顺带解决了版本控制和增量构建，还能迁移去做漫画。
+Design here means **the abstraction** (what this thing is, what it naturally
+ought to look like), not module structure and tech stack — drawing the module
+diagram and settling the stack first is starting construction before you have
+figured out what you are building. So development is not demand-driven, it is
+technology-driven, and demand-driven development ends as a pile of mud. A
+good developer has an intuition about how a thing "ought" to be, and it comes
+before the request. "Elegance" is exactly this beauty that has nothing to do
+with the business, and beauty means **more likely to be right** (Solomonoff
+induction: shorter programs have higher prior probability). The full text has
+one complete example: thinking of "AI makes slide decks automatically" as an
+image build system, which solves version control and incremental builds along
+the way and can transfer to making comics.
 → [principles/upfront-design.md](principles/upfront-design.md)
 
-### 认知：给事物下定义的能力
+### Cognition: the ability to define things
 
-**开发者最重要的能力，是给事物下定义的能力**——从产品到模块到一个变量，
-每层都有；有时有意识，有时下意识，**更多时候是无意识的，那些恰恰最容易错**。
-而认知的质量取决于上下文：**基于一个局部下的定义，一定是错的定义**。
-团队里每个人常像盲人摸象只拿到一个点；不给上下文的人，让 AI 也在摸象——
-AI 摸得又快又流畅，会顺着那一个点写出一大堆自洽但错位的东西。
-所以人和 AI 都要先判断自己拿到的是全貌还是局部，缺了去补，补不到的写成假设。
+**A developer's most important ability is the ability to define things** —
+from the product to a module to a variable, every level has one; sometimes
+conscious, sometimes subconscious, **and most often unconscious, and those
+are exactly the easiest to get wrong**. And the quality of a cognition
+depends on context: **a definition made from a fragment is certainly a wrong
+definition**. In a team, everyone is often like the blind men and the
+elephant, holding only one point; someone who gives the AI no context makes
+the AI feel the elephant too — and the AI feels fast and fluently, writing a
+great pile of self-consistent but misaligned things along that one point. So
+both people and AI first judge whether what they hold is the whole picture or
+a fragment, go fill in what is missing, and write what they can't fill in as
+an assumption.
 → [principles/cognition.md](principles/cognition.md)
 
-### 深挖本质问题
+### Dig to the root
 
-**绝大多数问题的最优解，都不在问题出现的那个地方**，而在很上游：
-结构设计得好，很多 bug 和性能问题压根不会发生；产品设计得好，
-很多用户反馈压根不会被提出来。所以 feature request 不能照字面做——
-用户报的**现象**是真的，他提的**解法**不一定是。
-最有用的信号：**设计上左右为难时，往往不是这里难，
-而是更顶层的设计出了问题，或者你还没想清楚。**
-停止判据是「在这里改，能让一整类问题一起消失」，不是「还能继续往上问」。
+**The best solution to most problems is not where the problem shows up**, but
+far upstream: structure the code well and many bugs and performance problems
+never get a chance to happen; design the product well and much user feedback
+is never raised. So a feature request cannot be taken literally — the
+**phenomenon** the user reports is real, the **solution** they propose may
+not be. The most useful signal: **when a design is stuck between two bad
+options, it is usually not that this spot is hard, but that some design
+further up has a problem, or you haven't thought it through yet.** The
+stopping criterion is "changing it here makes a whole class of problems
+disappear together", not "I can still keep asking upward".
 → [principles/dig-to-the-root.md](principles/dig-to-the-root.md)
 
-### 优秀是默认值
+### Excellence is the default
 
-**伟大的设计让好的东西自然，让不好的东西不自然。**
-这里的 bug 指一切「不好」的东西（体验、性能、逻辑、结构、可读性），
-而且它是一条谱线而非开关，所以目标是**让越好的做法越省力，越差的越费劲**，
-极限是坏做法**根本无法被表达**（像《1984》的「新话」）：
-serverless 里拿不到别人的状态，Next.js 里后端只有一个定义。
-故伟大的设计常常不需要异常处理——判据不是异常处理的数量，
-而是「这个异常为什么不可能发生」答不答得出结构性理由。
-可测量的形式是**代码梯度**：改一点点就可能出事的代码叫 **singularity**，
-哪怕当前完全正确也不算好。**正确性是点上的性质，梯度是邻域上的性质。**
+**Great design makes the good thing natural and the bad thing unnatural.**
+A bug here means everything "bad" (experience, performance, logic, structure,
+readability), and it is a spectrum rather than a switch, so the goal is
+**the better the practice, the less effort; the worse, the more effort**,
+with the limit that the bad practice **cannot be expressed at all** (like
+Newspeak in *1984*): in serverless you can't get anyone else's state, and in
+Next.js the backend has exactly one definition. So a great design often needs
+no exception handling — the criterion is not the quantity of exception
+handling, but whether "why is this exception impossible" has a structural
+answer. The measurable form is the **code gradient**: code where a small
+change can break things is called a **singularity**, and it doesn't count as
+good even if it is currently completely correct. **Correctness is a property
+of a point; the gradient is a property of a neighborhood.**
 → [principles/excellence-by-default.md](principles/excellence-by-default.md)
 
-### 组合优于配置
+### Provide building blocks, not features
 
-**区别在耦合。** 配置把所有使用者绑在同一个实体上，参数之间组合爆炸，
-而且**只能覆盖你事先想到的变化维度**——大变化从来不落在预设的轴上，
-那时所有配置项一起变成包袱。组合是小而正交的部件，换掉一个只影响用它的人，
-还能拼出你当初没想到的东西（`grep | sort | uniq` 从来没被谁设计过）。
-信号：布尔参数、`if (config.x)` 渗进实现、文档开始写「A 为 true 且 B 为 false 时…」。
-注意配置**数据**（端口、密钥）没问题，配置**行为**才该换成组合。
+**Don't aggregate capabilities into one big thing "for people to use".
+Provide atomic building blocks, and let people build what they want.**
+An interface with a hundred buttons, a backend with a hundred endpoints, a
+class with a hundred methods, a function with a hundred parameters — the same
+disease: **piling a large number of mutually independent things onto one flat
+plane**. The counterintuitive conclusion: **building blocks are usually fewer
+than one-stop interfaces**, because you don't have to enumerate the
+combinations. When you must aggregate, **make a hierarchy** (an operating
+system: system calls → shell and standard library → applications), each layer
+giving its users building blocks of the right granularity — **a flat,
+enormous aggregation is what is bad**. The computer itself is the exemplar:
+it doesn't come with everything, it lets you get online and install apps,
+**you are building your own computer**. **This draws no line between inside
+and outside**: writing code, designing an API, and designing a product are
+the same thing at different scales. Developers, developer-users, and AI are
+essentially the same kind of user, and one design benefits all three sides.
+And in the AI era, **serving ordinary users is increasingly serving
+developers** — the user arrives with an agent, and what the agent uses is not
+your interface but your building blocks. So **the code itself is part of the
+product design**, and the programmatic usage experience sometimes matters
+more than the experience at the GUI level.
+
+→ [principles/building-blocks.md](principles/building-blocks.md)
+
+### Composition over configuration
+
+**The difference is coupling.** Configuration binds every user to the same
+entity, the parameters explode combinatorially, and **it can only cover the
+dimensions of change you thought of in advance** — large change never lands
+on a pre-set axis, and then every config option becomes baggage together.
+Composition is small, orthogonal parts: replacing one affects only the people
+using it, and it can assemble things you didn't think of at the start
+(`grep | sort | uniq` was never designed by anyone). Signals: boolean
+parameters, `if (config.x)` seeping into the implementation, documentation
+starting to say "when A is true and B is false…". Note that configuring
+**data** (ports, keys) is fine; configuring **behavior** is what should
+become composition.
 → [principles/composition-over-configuration.md](principles/composition-over-configuration.md)
 
-### 当心看不见的耦合
+### Beware of coupling you can't see
 
-**最危险的耦合不是 import 来 import 去的那种，
-而是两个东西共享了一个没被写下来的概念或预期**——
-它不在依赖图里，grep 不到，类型系统不管，破坏还是静默的。
-三层：**接口层**（同一份契约被实现两次，改一边另一边不报错）、
-**概念层**（一个页面显示「剩余额度」，另一个显示「额度明细」，
-而「额度」含不含赠送、含不含预扣从没有一处定义）、
-**用户预期层**（操作一向可撤销、列表一向最上面是最新，
-某天同样的位置换了语义——代码毫无关系，测试全绿，用户照旧习惯行事然后受伤）。
-**用户的预期也是一种接口，只是没写在任何文件里。**
-办法：给共享的概念一处定义并命名；改动时问「谁还依赖这个概念」而不是「谁 import 了这个文件」。
+**The most dangerous coupling is not the kind that imports back and forth. It
+is two things sharing a concept or an expectation that was never written
+down** — it isn't in the dependency graph, grep can't find it, the type
+system doesn't govern it, and the damage is silent. Three layers: **the
+interface layer** (the same contract implemented twice, change one side and
+the other doesn't error), **the concept layer** (one page shows "remaining
+credit", another shows "credit breakdown", and whether "credit" includes what
+was given free or what was reserved but not settled was never defined
+anywhere), **the user-expectation layer** (operations have always been
+undoable, the newest has always been at the top of a list, and one day the
+same place changes its semantics — the code is entirely unrelated, the tests
+are all green, and the user acts on the old habit and gets hurt). **A user's
+expectation is an interface too, only it is written in no file.** The remedy:
+give the shared concept one definition and a name; when changing something,
+ask "who else depends on this concept", not "who imported this file".
 
 → [principles/hidden-coupling.md](principles/hidden-coupling.md)
 
-### 实事求是
+### Seek truth from facts
 
-**代码规范没有普世价值**，好坏取决于这东西到底是干什么的，切忌教条主义。
-每条规范都有代价：向后兼容让代码臃肿，「生产级」意味着复杂并趋向难以修改，
-FP/OOP/AOP 都不是通用准则——一个内部工具根本不需要向后兼容。
-根子还是认知：想清楚目的和定位，才谈得上取舍；
-盲目追求规范是用别人的答案代替自己的思考。
-**不同的目的有不同的优雅**（内部工具的优雅是五分钟能改完，
-基础设施的优雅是十年不用改接口），
-而从目的推导出「这里什么才算优雅」的能力本身就是优雅。
+**Code conventions have no universal value.** Good or bad depends on what
+this thing is actually for. Beware of dogmatism. Every convention has a cost:
+backward compatibility bloats the code, "production-grade" means complexity
+and a drift toward being hard to modify, and FP/OOP/AOP are none of them
+universal criteria — an internal tool needs no backward compatibility at all.
+The root is still cognition: only after the purpose and the positioning are
+clear is a tradeoff even discussable. Blindly pursuing conventions is
+substituting someone else's answer for your own thinking. **Different
+purposes have different elegances** (the elegance of an internal tool is that
+it can be changed in five minutes; the elegance of infrastructure is that the
+interface needs no change for ten years), and the ability to derive from the
+purpose "what counts as elegant here" is itself elegance.
 → [principles/seek-truth-from-facts.md](principles/seek-truth-from-facts.md)
 
-### 要有主见
+### Have a view
 
-**收到一条指令，先想「为什么」，而不是直接照做。**
-**他说的是一个东西，他想要的其实是另一个东西，而真正的解法又是第三个东西**——
-照字面执行等于永远在最外层工作，每次都「符合要求」，却一次比一次离本质更远。
-AI 尤其要注意：它的默认倾向是服从，而且执行得又快又自洽，
-错位不会卡住，会被迅速铺成一大堆看起来很合理的代码；
-人还容易把 AI 的顺从当成确认，于是没有任何一方在把关。
-**AI 追求的是做出高质量的开发，不是一味迎合人类**——
-看代码隐隐觉得哪里设计得不好、或者觉得对方还没想清楚，就要说出来讨论，
-别因为说不出确切理由就咽回去：改了能省未来大量 debug，
-不改也是一次好的教学，成本只是一次对话。
-但**有主见不是自作主张**：想到更好的要说出来并得到同意，
-默默替换比盲从更糟；对方仍坚持就照做。
+**When you receive an instruction, think "why" first, rather than doing it
+directly.** **What they said is one thing, what they actually want is
+another, and the real solution is a third** — executing literally means
+working forever at the outermost layer, "meeting the requirement" every time
+and further from the essence each time. AI has to be especially careful: its
+default tendency is to comply, and it executes fast and self-consistently, so
+a misalignment doesn't jam, it gets spread quickly into a great pile of code
+that looks very reasonable; and people tend to take the AI's compliance as
+confirmation, so nobody on either side is checking. **What AI is after is
+high-quality development, not pleasing humans at every turn** — if the code
+vaguely feels badly designed somewhere, or the other person seems not to have
+thought something through, say it and discuss it, and don't swallow it
+because you can't state an exact reason: changing it can save a large amount
+of future debugging, and not changing it is still good teaching, at the cost
+of one conversation. But **having a view is not acting on your own**: a
+better approach has to be said out loud and agreed to. Silent substitution is
+worse than blind compliance; if the other person still insists, do it their
+way.
 → [principles/have-a-view.md](principles/have-a-view.md)
 
-### 讲理由，不只讲规矩
+### Give the rationale, not just the rule
 
-**规矩离开理由就会失效。** 任何规定都要连着它想解决的问题一起交付；
-条文有限、情况无限，碰到没被覆盖的场合，只有理由能用来外推。
-所以读的人要**读意图，而不是读字面**；条文和它自己的意图冲突时，
-按意图做，然后回来把条文改对。
+**A rule detached from its rationale stops working.** Every rule is delivered
+together with the problem it is trying to solve. The text is finite and
+situations are infinite, and in a case the text doesn't cover, only the
+rationale can be extrapolated from. So the reader **reads the intention, not
+the letter**; when an item conflicts with its own intention, follow the
+intention, then come back and fix the item.
 → [principles/rationale-over-rules.md](principles/rationale-over-rules.md)
 
-## 创意考拉的取舍
+## Creative Koalas' own choices
 
-上面的原则是通用的；这一条是**创意考拉自己的答案**，
-是[实事求是](principles/seek-truth-from-facts.md)在本公司的落点。
+The principles above are general. These are **Creative Koalas' own answers**,
+the landing of [seeking truth from facts](principles/seek-truth-from-facts.md)
+at this company.
 
-**代码的简洁与优雅，优先于向后兼容、优先于性能、
-也优先于那些不太重要的用户体验。**
-鲁棒性和生产稳定性不在让路之列——优雅的代码本身就更鲁棒，
-靠一堆 patch 堆出来的鲁棒是 amateur 的做法。
-理由：我们是 AI 初创公司，代码每天都在改，**好不好改远比接口能顶十年重要**；
-而我们的竞争力在基础技术上的降维打击，不在工程侧卷那几个百分点。
-→ [company-tradeoffs.md](company-tradeoffs.md)
+**The simplicity and elegance of the code come before backward compatibility,
+before performance, and before user experience that isn't very important.**
+Robustness and production stability are not among the things that give way —
+elegant code is itself more robust, and robustness piled up out of a heap of
+patches is the amateur's approach. The reason: we are an AI startup, the code
+changes every day, and **whether it is easy to change matters far more than
+whether an interface can last ten years**; and our competitiveness is a
+dimensional advantage in fundamental technology, not competing over a few
+percentage points on the engineering side.
+→ [company/tradeoffs.md](company/tradeoffs.md)
 
-## 分领域的思路
+**Programmatic first**: for every product, internal and external, **the
+primary user is a programmatic user** — someone writing a script, another
+piece of code calling it, an agent doing the work for a user. Every
+capability must have a programmatic interface (in the broad sense), and that
+interface itself has to be elegant, building-block oriented, and ergonomic.
+**No operation that "can only be done in the UI"**; design the interface
+first, then the UI. The reason: users arrive carrying an agent, everyone
+inside has an agent, and **an interface is composable while a UI is not**;
+the GUI is a rendering layer, rendering a UI from a capability is easy, and
+inferring the capability back out of a UI is impossible.
+→ [company/programmatic-first.md](company/programmatic-first.md)
 
-**产品与交互设计**：最伟大的产品都是通用的，「功能丰富」不是好；
-真正的好是用少数简单到不用教的功能，让用户做任何想做的事。
+## Mindsets for specific areas
+
+**Product and interaction design**: the greatest products are all general,
+and "feature-rich" is not good. What is actually good is letting the user do
+anything they want using a few features simple enough to need no teaching.
 → [domain-mindsets/product-design.md](domain-mindsets/product-design.md)
 
-**测试**：目的是不出错，所以第一顺位是靠设计让错误无法发生，而不是多写测试。
-写测试要克制（每个测试都是一笔要跟着实现改的债）、算投入产出比、
-优先 high-level、和被测代码离得越近越好。
+**Testing**: the purpose is not going wrong, so the first priority is making
+the error impossible by design, not writing more tests. Write tests with
+restraint (every test is a debt that has to change along with the
+implementation), weigh the return against the cost, prefer high-level, and
+keep them as close as possible to the code they test.
 → [domain-mindsets/testing.md](domain-mindsets/testing.md)
 
-**技术选型**：先问「这东西的应然是什么样子」，再挑工具。
-判据一是**选那个让好变成默认、让坏变得难受的**——天然无状态的用 serverless，
-天然有状态的（如 persistent agent infra）就别硬套；
-最有用的一问是「我是在顺着它用还是绕着它用」。
-判据二是**选现代的不选古早的**：现代栈把「让错误无法被表达」内建了。
-另有极度谨慎清单（Java 系；裸 HTML/JS/CSS 与 jQuery 那类古早前端——
-Next.js、TypeScript、Tailwind 都可以）。
+**Technology choice**: first ask "what ought this thing to look like", then
+pick the tool. Criterion one is **pick the one that makes good the default
+and makes bad uncomfortable** — something naturally stateless uses
+serverless, something naturally stateful (such as persistent agent infra)
+should not be forced into it; the most useful question is "am I using it with
+the grain or working around it". Criterion two is **pick modern, not
+archaic**: a modern stack has "make the error inexpressible" built in. There
+is also an extreme-caution list (the Java family; archaic frontends like bare
+HTML/JS/CSS and jQuery — Next.js, TypeScript, and Tailwind are all fine).
 → [domain-mindsets/tech-choice.md](domain-mindsets/tech-choice.md)
 
-**AI coding 的注意力**：用好 AI 的核心是**让它在正确的时间注意到正确的东西**。
-你希望它注意到的东西，必须有一条从「它一定会看到的地方」通过去的**指针链**，
-且每一环都要有**简短的描述**让它有动机走下去。
-两种断法：没有指针（东西等于不存在）、有指针但描述是抽象名词（同样等于不存在）。
-注意力有预算，**稀释就是删除**。
+**The three boundaries**: designing anything for someone else to use (an app,
+an internal system, a tool, a code package, a skill all count) means looking
+at three layers at once: the product itself / the system formed by the
+product and other existing things / the system formed once the user is added.
+When usable "other things" exist, the principle is **the first layer simple
+and elegant, the second powerful, the third a good experience** — trying to
+be powerful and a good experience at once inside the first layer certainly
+produces something bloated. The most common "other thing" today is the
+general AI agent. The criterion is **whether your user will actually have
+it**, not whether it can technically cooperate.
+→ [domain-mindsets/three-boundaries.md](domain-mindsets/three-boundaries.md)
+
+**Tools for general agents, not vertical agents**: most of the time, "build
+an AI system" really means "build something an existing general agent can
+use". A vertical agent (垂域 AI 系统) or a complex workflow is almost always
+worse, **even inside that vertical slice** — a general agent's behavior
+emerges, and its control flow is generative, reactive, and adaptive, where
+the workflow is hand-engineered wisdom about cases you anticipated. The
+analogy is deep networks against hand-engineered features: engineered wisdom
+is almost always worse than online adaptation. What you build instead is the
+pair around it. Today's general agents lack creativity, so **give them the
+right tool, the right knowledge, and the right mindsets, and the guidance is
+as important as the tool**. Chameleon is the example: a build system plus the
+skill that teaches an agent to author with it, where the request was "AI
+that generates images and video".
+→ [domain-mindsets/tools-for-general-agents.md](domain-mindsets/tools-for-general-agents.md)
+
+**The ergonomics of programmatic use**: the experience designed for people
+who "write code to use your thing", and for AI. The user **guesses as they
+write**, and **when AI guesses wrong it doesn't stop to ask — it writes wrong
+code that looks very reasonable**. **"Programmatic use" is broad**: a CLI, a
+network API, a library function called by another piece of code all count.
+The first rule of thumb is **structure it whenever you can, and lift
+rendering out as its own layer** — **the degree of structure directly
+determines the degree of composability**; a blob of text can only be torn
+apart with a regex. The rest: **make guessing right the default**,
+guessability before completeness of documentation, every capability callable
+from a script, **an error message is the real-time instruction you give the
+agent**, what can be generated is the best documentation, idempotent and
+retryable, output size under control (an agent can't scroll and skip). The
+test: give an agent that has never read the docs a real task armed with
+nothing but `--help`, and watch where it gets stuck.
+→ [domain-mindsets/programmatic-ergonomics.md](domain-mindsets/programmatic-ergonomics.md)
+
+**Attention in AI coding**: the core of using AI well is **letting it notice
+the right thing at the right time**. Everything you want it to notice must
+have a **chain of pointers** reaching it from "a place it is certain to see",
+and every link needs a **short description** giving it a motive to walk on.
+Two ways it breaks: no pointer (the thing might as well not exist), or a
+pointer whose description is an abstract noun (equally nonexistent).
+Attention has a budget, and **dilution is deletion**.
 → [domain-mindsets/attention.md](domain-mindsets/attention.md)
 
-**文档与规范**：**对实现的描述**贴着实现放，能生成就生成，目标是「不需要文档」；
-**对上下文、抽象与设计的描述**该有自己的目录并长期维护——
-抽象是目的、具体是手段，只留手段，更新就会一点点偏离目的。两类都要短。
+**Documentation**: **descriptions of the implementation** sit next to the
+implementation, generated when they can be, with the goal of "no
+documentation needed"; **descriptions of context, abstraction, and design**
+should have their own directory and be maintained over time — the abstraction
+is the purpose and the concrete is the means, and keeping only the means
+means every update drifts a little from the purpose. Both kinds stay short.
 → [domain-mindsets/documentation.md](domain-mindsets/documentation.md)
 
-## 具体做法
+**Supervising agents**: when agents write the code, **the scarce resource is
+the owner's understanding and judgment**. One person supervising several
+sessions moves only as fast as they can judge each one, and **unjudged work
+drifts**: in Kit, autonomous sessions removed partial checkout, role
+delegation, and the security history to fit a line budget, wrote each
+removal down as a "limitation", and nobody saw it. So an agent's output is
+measured by how cheaply it lets the owner judge correctly. The terminal is
+the wrong home for that, being a stream ordered by time that dies with the
+session. **Explain top-down** — first principles → the idea behind the
+design → the design → the implementation architecture → how to try it
+yourself — because a wrong first principle invalidates everything below it.
+**Speak the core abstraction, not the implementation** ("aren't files
+materialization of nodes?"). **Make every decision decidable**: a worked
+example, the costs, a default; an uninformed yes is not a decision. **Give
+evidence, not assertion**: the report is written by the party being judged,
+so generated numbers, runnable commands, estimates stated before and measured
+after, and deviations named as deviations. Write for a peer, not a student.
+→ [domain-mindsets/supervising-agents.md](domain-mindsets/supervising-agents.md)
 
-可以直接照着做的约定，一条一个文件；每条都写了它的**效果和反效果**。
+## Concrete practices
 
-**四个 playbook**——常见处境下可以照着走的路径。
-它们共用一条主线：每走完一遍都回头问**「这让整体变简单了还是变复杂了」**。
-**产品设计和开发设计是同一件事**，判据也是同一个：优雅。
+Conventions you can follow directly, one per file; each states its **effect
+and its counter-effect**.
 
-- [开一个新项目](practices/playbook-new-project.md)——
-  先写清目的与边界，再找这件事的**通用形态**，然后做能端到端跑通的最小闭环。
-- [来了一个需求](practices/playbook-request.md)——
-  不管它来自用户反馈还是内部想法：**提需求的人给你的是解法，不是目的**。
-  先把现象和解法分开、往上挖目的、找共性，再试着不加代码就满足它。
-  **比较方案时看仓库的总代码量，不是这个改动的大小。**
-- [遇到一个 bug](practices/playbook-bug.md)——
-  先判严重性，问「为什么这个状态可能出现」，修完再问「怎么让这一类根本没机会发生」。
+**Three playbooks** — paths you can walk in common situations. They share one
+thread: after each pass, look back and ask **"did this make the whole simpler
+or more complex"**. **Product design and development design are the same
+thing**, and the criterion is the same one: elegance.
 
-**单项约定：**
+- [Starting a new project](practices/playbook-new-project.md) —
+  first write down the purpose and the boundary, then find the **general
+  form** of the thing, then build the smallest loop that runs end to end.
+- [A request arrives](practices/playbook-request.md) —
+  whether it comes from user feedback or an internal idea: **the person
+  raising the request hands you a solution, not a purpose**. First separate
+  the phenomenon from the solution, dig upward for the purpose, find the
+  commonality, then try to satisfy it without adding code. **When comparing
+  options, look at the repo's total amount of code, not the size of this
+  change.**
+- [Hitting a bug](practices/playbook-bug.md) —
+  judge the severity first, ask "why can this state occur", and after fixing
+  it ask "how do we make this whole class have no chance to occur".
 
-- [先确认那个限制是真的](practices/verify-the-constraint.md)——
-  为「做不到 X」造变通方案之前先查证；变通方案是永久负债，
-  而你对平台的「印象」可能过时且不会让你感到不确定。
-- [缺了就问，别猜](practices/ask-when-unsure.md)——
-  分清缺的是上下文（自己查）、认知还是定位（直接问）；带着猜测和默认答案去问。
-- [新增之前，先说清它取代了什么](practices/replace-dont-accumulate.md)——
-  同类能力并存是臃肿的主要来源；必须并存的，写下**可判定的**截止条件。
-- [一切都要链回常驻文件](practices/chain-back-to-always-loaded.md)——
-  已知机制里只有 `AGENTS.md` / `CLAUDE.md` 保证 always loaded；
-  链不回去的东西，没有任何机制保证它会被看见。
-- [仓库要有「这是什么、为什么」](practices/context-entry-point.md)——
-  精简版进常驻文件（AI 才能一直带着正确认知），全文进 `design/`；
-  把上下文放在必经之路上，而不是要求人和 agent 自觉去补。
-- [顺手把道理讲出来](practices/teach-and-guide.md)——
-  讲这一次决定的道理，不泛讲原则；认知性问题用提问引导，别直接给结论；
-  并逐渐把人带成**会主动给目的与定位**的人，而不是只会机械提需求。
-- [同一件事向 agent 解释第二次，就写进仓库](practices/teach-once.md)——
-  提示词和 skill 是生产资料，不是聊天记录；但它会过期，要跟着删。
-- [同一类问题出现第二次，就不许再就地修](practices/second-occurrence.md)——
-  「第二次」是个便宜又明确的刹车点；「同一类」按根因算，不按现象算。
-- [能交给机器管的，就别写成规矩](practices/machine-over-rules.md)——
-  类型 > lint/CI > 模板 > 目录结构 > 写规矩；注释里的「小心」是最弱的护栏。
-- [文档、测试、实现改在同一个提交里](practices/co-located-changes.md)——
-  让描述过期变成「不可能看不见」。
-- [小步提交](practices/small-commits.md)——一个提交只做一件事。
+**Individual conventions:**
+
+- [First confirm the constraint is real](practices/verify-the-constraint.md) —
+  before building a workaround for "X can't be done", verify it. A workaround
+  is a permanent liability, and your "impression" of a platform may be
+  outdated without making you feel uncertain.
+- [If something is missing, ask. Don't guess](practices/ask-when-unsure.md) —
+  distinguish whether what's missing is context (look it up yourself),
+  cognition, or positioning (ask directly); ask carrying your guess and a
+  default answer.
+- [Before adding, say what it replaces](practices/replace-dont-accumulate.md) —
+  coexisting capabilities of the same kind are the main source of bloat; when
+  they must coexist, write down a **decidable** end condition.
+- [Everything chains back to the always-loaded file](practices/chain-back-to-always-loaded.md) —
+  among known mechanisms only `AGENTS.md` / `CLAUDE.md` are guaranteed always
+  loaded; something that doesn't chain back has no mechanism guaranteeing it
+  will be seen.
+- [A repo needs "what this is, and why"](practices/context-entry-point.md) —
+  the short version in the always-loaded file (so the AI carries the right
+  cognition at all times), the full text in `design/`; put the context on the
+  path that must be traveled, rather than asking people and agents to go fill
+  it in conscientiously.
+- [Keep a living report for the owner, in the repo](practices/living-report.md) —
+  one page per repo for the person who judges the work. The top holds what
+  changed since the last report (new, fixed, found, and over estimate), what
+  needs them (each decision with a default), and where it stands (works with
+  evidence, unproven, deliberately not built). Below it, the system goes from
+  first principles to the idea, the design, the architecture, and copy-paste
+  commands to try it. It is updated in the same commit as the work, with
+  numbers written by the code that measures them and commands run exactly as
+  printed. **Never a one-shot page, a hosted mirror, or a note in memory**: a
+  copy drifts and is still trusted.
+- [Explain the reasoning while you're at it](practices/teach-and-guide.md) —
+  explain the reasoning of this particular decision, not the principle in
+  general; guide cognitive questions with questions, don't hand over the
+  conclusion; and gradually turn people into ones who **volunteer the purpose
+  and the positioning**, rather than only raising mechanical requests.
+- [Explain the same thing to an agent a second time, and write it into the repo](practices/teach-once.md) —
+  prompts and skills are means of production, not chat logs; but they go
+  stale, and have to be deleted along the way.
+- [The second time the same kind of problem appears, fixing it in place is no longer allowed](practices/second-occurrence.md) —
+  "the second time" is a cheap and unambiguous braking point; "the same kind"
+  is counted by root cause, not by phenomenon.
+- [What a machine can enforce, don't write as a rule](practices/machine-over-rules.md) —
+  types > lint/CI > templates > directory structure > writing a rule; a
+  "careful" in a comment is the weakest guardrail.
+- [Change the docs, the tests, and the implementation in the same commit](practices/co-located-changes.md) —
+  make a stale description "impossible not to see".
+- [Small commits](practices/small-commits.md) — one commit does one thing.
+- [Use independent agents with engineered context](practices/engineered-context.md) —
+  when you need a perspective you don't have, spin up a fresh agent and
+  decide the character by what it actually knows. A clean context is a user
+  or a new contributor who knows nothing, and shows whether the product can
+  be used and the code understood; injecting a general investor mindset is an
+  investor reading the business proposal. The result is evidence, not a vote,
+  and a label stuck on an agent that already knows everything is role-play.

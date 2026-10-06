@@ -1,83 +1,116 @@
-# 组合优于配置
+# Composition over configuration
 
-**Composition over configuration。区别在耦合。**
+**Composition over configuration. The difference is coupling.**
 
-- **配置**：一个大而全的东西，用参数控制它的行为。
-- **组合**：一组小而正交的部件，拼装出想要的行为。
+- **Configuration**: one large, all-encompassing thing, whose behavior is
+  controlled by parameters.
+- **Composition**: a set of small, orthogonal parts, assembled into the
+  behavior you want.
 
-两者都能让系统「可变」，但代价完全不同。
+Both can make a system "variable", but the costs are entirely different.
 
-## 为什么配置会寄
+## Why configuration breaks
 
-**配置把所有使用者绑在同一个实体上。**
-每加一个参数，那个实体内部就要多处理一批组合；参数之间还会互相影响，
-组合数按指数长。于是：
+**Configuration binds every user to the same entity.**
+Each parameter you add means that entity has to handle another batch of
+combinations internally; parameters also affect each other, and the number of
+combinations grows exponentially. So:
 
-- 改一个参数的语义，**所有使用者一起受影响**——没人敢改。
-- 想加一种新行为，只能再加一个参数，让那个实体继续变大。
-- 测试要覆盖的是**组合**，不是选项数量，很快就覆盖不过来了。
+- Change the semantics of one parameter and **every user is affected
+  together** — nobody dares to change it.
+- To add a new behavior, you can only add another parameter, and the entity
+  keeps growing.
+- What tests have to cover is the **combinations**, not the number of
+  options, and coverage becomes impossible quickly.
 
-更根本的问题是：
+The more fundamental problem:
 
-> **配置只能覆盖你事先想到的变化维度。**
+> **Configuration can only cover the dimensions of change you thought of in
+> advance.**
 
-参数就是你预留的那几根轴。需求沿着轴动的时候，一切看起来都很美；
-**但真正的大变化从来不落在预设的轴上。**
-那时候你会发现，所有配置项、以及为了支持它们写的分支，
-全部一起变成包袱——这就是「产品有个大更新就寄掉」的机制。
+Parameters are the few axes you reserved. While requests move along those
+axes, everything looks beautiful. **But a real, large change never lands on
+an axis you set in advance.** Then you find that every config option, and
+every branch written to support them, has become baggage all at once — which
+is why a big product update breaks everything.
 
-配置在传统眼光下常常显得很美：统一入口、一处控制、不写代码就能改行为、
-「可配置」听起来很强大。**那是静态视角下的美**，
-它假设了世界只会沿着你画好的坐标轴移动。
+Under the traditional eye, configuration often looks beautiful: one unified
+entry point, control in one place, behavior changed without writing code,
+"configurable" sounding powerful. **That is beauty under a static view.** It
+assumes the world will only ever move along the axes you drew.
 
-## 组合为什么不一样
+## Why composition is different
 
-部件之间只通过**窄而通用的接口**相连，彼此不知道对方存在。所以：
+Parts connect only through **narrow, general interfaces**, and know nothing
+of each other's existence. So:
 
-- 换掉一个部件，**只影响用它的人**。
-- 加一种新行为，是**加一个新部件**，已有的部件一行都不用改。
-- 用不上的部件根本不参与，不构成认知负担，也不进测试矩阵。
-- **能拼出你当初没想到的东西**——因为组合的空间不是你预留的。
+- Replace one part and **only the people using it are affected**.
+- Adding a new behavior is **adding a new part**; existing parts don't change
+  a single line.
+- A part you don't use simply doesn't participate. It is no cognitive burden
+  and it doesn't enter the test matrix.
+- **You can assemble things you didn't think of at the start** — because the
+  space of combinations is not one you reserved.
 
-Unix 管道是最经典的例子：`grep | sort | uniq` 这类组合从来没有被谁「设计」过，
-它是窄接口（字节流）自然长出来的。
-反过来，一个有两百个 flag 的巨型工具，能做的事永远只有那两百个 flag 的组合。
+The Unix pipe is the classic example: combinations like
+`grep | sort | uniq` were never "designed" by anyone. They grew naturally out
+of a narrow interface (the byte stream). Conversely, a giant tool with two
+hundred flags can only ever do the combinations of those two hundred flags.
 
-## 怎么判断
+## How to tell
 
-需求变了的时候，问自己：
+When a request changes, ask yourself:
 
-> **我是在改一个参数的语义（所有使用者跟着受影响），
-> 还是在换掉 / 加上一个部件（只影响用它的人）？**
+> **Am I changing the semantics of a parameter (every user affected along
+> with it), or replacing / adding a part (only the people using it
+> affected)?**
 
-几个很准的信号：
+A few accurate signals:
 
-- **布尔参数。** 一个函数有 `flag` 参数，通常意味着它其实是**两个函数**。
-- **`if (config.x)` 散落在实现里。** 说明配置已经渗进了核心逻辑，
-  不再是「外部的选择」，而是内部的分支。
-- **配置项还在增长。** 到第三、第四个的时候就该停下来问：
-  这几个是不是本来应该是不同的部件？
-- **文档里开始出现「组合说明」**（「A 为 true 且 B 为 false 时，C 无效」）——
-  组合爆炸已经发生了。
+- **Boolean parameters.** A function with a `flag` parameter usually means it
+  is really **two functions**.
+- **`if (config.x)` scattered through the implementation.** The configuration
+  has seeped into the core logic. It is no longer "a choice made outside"; it
+  is a branch inside.
+- **The config options are still growing.** By the third or fourth, stop and
+  ask: were these supposed to be different parts all along?
+- **The documentation starts containing "combination notes"** ("when A is
+  true and B is false, C has no effect") — the combinatorial explosion has
+  already happened.
 
-## 和其他原则的关系
+## Relation to the other principles
 
-- [minimalism](minimalism.md) 主张 6 说「配置是最后的手段」，
-  那条讲的是**别急着加配置项**；这条讲的是**不加配置项的话该往哪走**。
-- 它是[对修改开放](what-is-code.md)的前提：
-  高耦合的系统改不动，于是只能不断往外套层，最后长成没人敢碰的样子。
-- 组合能力来自窄而通用的接口，而接口窄不窄取决于你有没有想清楚
-  「这东西到底是什么」（见 [认知](cognition.md)）。
-  **组合不是一种代码技巧，是抽象选对了的副产品。**
+- It is the special case of
+  [provide building blocks, not features](building-blocks.md) along the
+  single axis of "how to accommodate change": that one is about aggregation
+  versus building blocks, this one is about parameters versus parts.
 
-## 这条规范不是什么
+- Claim 6 of [minimalism](minimalism.md) says "configuration is the last
+  resort". That one is about **not rushing to add config options**; this one
+  is about **where to go if you don't add them**.
+- It is the precondition of being
+  [open to modification](what-is-code.md): a highly coupled system can't be
+  changed, so the only move left is to keep wrapping layers around the
+  outside, until it grows into something nobody dares to touch.
+- The ability to compose comes from narrow, general interfaces, and whether
+  an interface is narrow depends on whether you have figured out "what this
+  thing actually is" (see [cognition](cognition.md)). **Composition is not a
+  coding technique. It is a byproduct of having chosen the right
+  abstraction.**
 
-- **不是不能有配置。** 区别在于你配置的是**数据**还是**行为**：
-  端口、密钥、超时、日志级别这些**只是填值**，本来就该是配置；
-  「走哪条流程」「用哪种算法」「要不要做这一步」是**行为**，那该用组合。
-- **不是把东西拆得越碎越好。**
-  部件要**正交且各自完整**。拆出一堆互相依赖、单独没有意义的碎片，
-  只是把耦合从参数里挪到了调用关系里，通常更糟。
-- **不是「做了插件系统就叫组合」。**
-  如果插件只能挂在你预留的那几个钩子上，那它仍然是配置，
-  只不过换了个更贵的写法：钩子就是轴，你还是只能沿着轴动。
+## What this rule is not
+
+- **It is not "there can be no configuration".** The distinction is whether
+  you are configuring **data** or **behavior**: ports, keys, timeouts, and
+  log levels are **just filling in values**, and they should be
+  configuration; "which flow to take", "which algorithm to use", "whether to
+  do this step" are **behavior**, and those should be composition.
+- **It is not splitting things as finely as possible.**
+  Parts should be **orthogonal and each complete in itself**. Splitting out a
+  pile of fragments that depend on each other and mean nothing alone only
+  moves the coupling out of the parameters and into the call relationships,
+  which is usually worse.
+- **It is not "having a plugin system means it's composition".**
+  If a plugin can only hang on the few hooks you reserved, it is still
+  configuration, just written in a more expensive way: the hooks are the
+  axes, and you can still only move along them.

@@ -1,33 +1,43 @@
-# 同一件事向 agent 解释第二次，就把它写进仓库
+# Explain the same thing to an agent a second time, and write it into the repo
 
-**你发现自己在对 agent 重复解释同一件事——写进仓库的 skill、提示词或 `AGENTS.md`，
-而不是下次再说一遍。**
+**When you notice yourself explaining the same thing to the agent again —
+write it into a skill, a prompt, or `AGENTS.md` in the repo, rather than
+saying it again next time.**
 
-## 怎么做
+## How to do it
 
-- **第一次解释：口头说就行。** 可能只是这一次的特殊情况。
-- **第二次解释同一件事：停下来，写进仓库。**
-  写清楚的标准和写规范一样——**带上为什么**，否则它换个场景就会被用错。
-- 写完当作代码对待：**它会过期，所以要跟着 review，失效了就删。**
+- **The first explanation: saying it is enough.** It may be a special case of
+  this one time.
+- **The second explanation of the same thing: stop, and write it into the
+  repo.** The standard for writing it clearly is the same as for writing a
+  rule — **include the why**, or it will be applied wrongly in a different
+  setting.
+- Once written, treat it as code: **it will go stale, so review it along with
+  everything else, and delete it when it stops being valid.**
 
-## 效果
+## Effect
 
-提示词和 skill 是[生产资料](../principles/what-is-a-repo.md)，不是聊天记录。
-写进仓库之后，它对所有人、所有 agent、所有未来的会话都生效；
-留在对话里，它随着上下文一起消失。
+Prompts and skills are [means of production](../principles/what-is-a-repo.md),
+not chat logs. Once written into the repo, it takes effect for everyone,
+every agent, and every future session. Left in the conversation, it
+disappears along with the context.
 
-**用「解释过两次」当触发条件**，是为了避免预先编纂一堆没人需要的规矩：
-真正值得写下来的东西，会自己重复出现。
+**Using "explained twice" as the trigger** is to avoid pre-compiling a pile
+of rules nobody needs: the things genuinely worth writing down repeat
+themselves.
 
-## 反效果与边界
+## Counter-effects and boundaries
 
-- **最大的风险是只堆不删。** 提示词过期不会报错，也不会有人抱怨，
-  它只会静静地把 agent 引向错误的方向。
-  加的时候就要想清楚它什么时候该失效。
-- **别把一次性的上下文写成永久规则。**
-  「这次先不要动数据库」是一次性的，「这个仓库的数据迁移一律走部署侧」才是规则。
-- **能靠结构解决的，优先靠结构**
-  （见[能交给机器管的就别写成规矩](machine-over-rules.md)）——
-  提示词也是要求对方自觉的一种形式，只是对象换成了 agent。
+- **The biggest risk is only accumulating and never deleting.** A stale
+  prompt doesn't error and nobody complains. It only quietly points the agent
+  in the wrong direction. When you add it, think through when it should
+  expire.
+- **Don't turn one-time context into a permanent rule.**
+  "Don't touch the database this time" is one-time. "Data migrations in this
+  repo always go through the deployment side" is a rule.
+- **What structure can solve, solve with structure first** (see
+  [what a machine can enforce, don't write as a rule](machine-over-rules.md))
+  — a prompt is also a form of asking the other party to be conscientious,
+  only with the agent as the target.
 
-出自[仓库是什么](../principles/what-is-a-repo.md)。
+From [what a repo is](../principles/what-is-a-repo.md).
