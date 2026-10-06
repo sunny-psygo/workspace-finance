@@ -34,17 +34,18 @@ model Session {
 }
 
 model Book {
-  id             String           @id
-  name           String
-  currency       String           @default("CNY")
-  createdAt      DateTime         @default(now())
-  accounts       Account[]
-  entries        Entry[]
-  claims         Claim[]
-  statements     BankStatement[]
-  periods        AccountingPeriod[]
-  yearCloses     YearClose[]
-  payrollBatches PayrollBatch[]
+  id               String              @id
+  name             String
+  currency         String              @default("CNY")
+  createdAt        DateTime            @default(now())
+  accounts         Account[]
+  entries          Entry[]
+  claims           Claim[]
+  statements       BankStatement[]
+  periods          AccountingPeriod[]
+  yearCloses       YearClose[]
+  payrollBatches   PayrollBatch[]
+  payrollOpenings  PayrollOpeningTax[]
 }
 
 model AccountingPeriod {
@@ -258,30 +259,54 @@ model PayrollBatch {
 }
 
 model PayrollLine {
-  id                 String       @id
-  batchId            String
-  batch              PayrollBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
-  personCode         String
-  personName         String
-  grossCents         Int
-  employeeSiCents    Int          @default(0)
-  housingFundCents   Int          @default(0)
-  otherDeductionCents Int         @default(0)
-  employerSiCents    Int          @default(0)
-  employerHfCents    Int          @default(0)
+  id                  String       @id
+  batchId             String
+  batch               PayrollBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  personCode          String
+  personName          String
+  grossCents          Int
+  employeeSiCents     Int          @default(0)
+  housingFundCents    Int          @default(0)
+  otherDeductionCents Int          @default(0)
+  employerSiCents     Int          @default(0)
+  employerHfCents     Int          @default(0)
   // 计算用的期初累计（分）
-  priorGrossCents    Int          @default(0)
-  priorSiCents       Int          @default(0)
-  priorHfCents       Int          @default(0)
-  priorTaxCents      Int          @default(0)
-  estimatedTaxCents  Int          @default(0)
-  confirmedTaxCents  Int          @default(0)
-  taxAdjustReason    String       @default("")
-  netCents           Int          @default(0)
-  sortOrder          Int          @default(0)
+  priorGrossCents     Int          @default(0)
+  priorSiCents        Int          @default(0)
+  priorHfCents        Int          @default(0)
+  priorTaxCents       Int          @default(0)
+  estimatedTaxCents   Int          @default(0)
+  // 税局导入税额；空=尚未导入
+  bureauTaxCents      Int?
+  confirmedTaxCents   Int          @default(0)
+  taxAdjustReason     String       @default("")
+  netCents            Int          @default(0)
+  sortOrder           Int          @default(0)
 
   @@index([batchId])
   @@index([personCode])
+}
+
+// 某年某人的个税累计起点（中途上线或跨系统接续）；与已过账批次相加
+model PayrollOpeningTax {
+  id          String   @id
+  bookId      String
+  book        Book     @relation(fields: [bookId], references: [id])
+  year        Int
+  personCode  String
+  personName  String   @default("")
+  // 截至该年、在 taxPeriod 之前已发生的累计（分）
+  grossCents  Int      @default(0)
+  siCents     Int      @default(0)
+  hfCents     Int      @default(0)
+  taxCents    Int      @default(0)
+  remark      String   @default("")
+  updatedBy   String   @default("")
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@unique([bookId, year, personCode])
+  @@index([bookId, year])
 }
 
 // 工资实发与银行流水的一次匹配

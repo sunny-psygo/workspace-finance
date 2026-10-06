@@ -63,6 +63,41 @@ const confirmTaxInput = z.object({
     .optional(),
 });
 
+const bureauTaxInput = z.object({
+  expectedRevision: z.number().int().nonnegative(),
+  mutationId: z.string().trim().min(1).max(120),
+  results: z
+    .array(
+      z.object({
+        personCode: z.string().trim().min(1).max(40),
+        bureauTaxCents: z.number().int().nonnegative(),
+        confirmedTaxCents: z.number().int().nonnegative().optional(),
+        reason: z.string().trim().max(200).optional().default(""),
+      }),
+    )
+    .min(1)
+    .max(1000),
+});
+
+const openingTaxInput = z.object({
+  year: z.number().int().min(2000).max(2100),
+  mutationId: z.string().trim().min(1).max(120),
+  lines: z
+    .array(
+      z.object({
+        personCode: z.string().trim().min(1).max(40),
+        personName: z.string().trim().max(40).optional().default(""),
+        grossCents: z.number().int().nonnegative().default(0),
+        siCents: z.number().int().nonnegative().default(0),
+        hfCents: z.number().int().nonnegative().default(0),
+        taxCents: z.number().int().nonnegative().default(0),
+        remark: z.string().trim().max(200).optional().default(""),
+      }),
+    )
+    .min(1)
+    .max(1000),
+});
+
 const mutationOnlyInput = z.object({
   expectedRevision: z.number().int().nonnegative(),
   mutationId: z.string().trim().min(1).max(120),
@@ -86,6 +121,8 @@ const reversePayInput = z.object({
 export type CreatePayrollBatchInput = z.input<typeof createBatchInput>;
 export type SetPayrollLinesInput = z.input<typeof setLinesInput>;
 export type ConfirmPayrollTaxInput = z.input<typeof confirmTaxInput>;
+export type BureauTaxInput = z.input<typeof bureauTaxInput>;
+export type OpeningTaxInput = z.input<typeof openingTaxInput>;
 export type PayrollMutationInput = z.input<typeof mutationOnlyInput>;
 export type PayrollPayInput = z.input<typeof payInput>;
 export type ReversePayrollPayInput = z.input<typeof reversePayInput>;
@@ -127,7 +164,15 @@ async function priorsForPerson(
   personCode: string,
   taxPeriod: string,
 ): Promise<{ priorGrossCents: number; priorSiCents: number; priorHfCents: number; priorTaxCents: number }> {
-  const year = taxPeriod.slice(0, 4);
+  const year = Number(taxPeriod.slice(0, 4));
+  const opening = await db.payrollOpeningTax.findUnique({
+    where: { bookId_year_personCode: { bookId, year, personCode } },
+  });
+  let priorGrossCents = opening?.grossCents ?? 0;
+  let priorSiCents = opening?.siCents ?? 0;
+  let priorHfCents = opening?.hfCents ?? 0;
+  let priorTaxCents = opening?.taxCents ?? 0;
+
   const posted = await db.payrollBatch.findMany({
     where: {
       bookId,
@@ -137,10 +182,6 @@ async function priorsForPerson(
     include: { lines: true },
     orderBy: { taxPeriod: "asc" },
   });
-  let priorGrossCents = 0;
-  let priorSiCents = 0;
-  let priorHfCents = 0;
-  let priorTaxCents = 0;
   for (const batch of posted) {
     for (const line of batch.lines) {
       if (line.personCode !== personCode) continue;
@@ -294,10 +335,11 @@ export async function setPayrollLines(
   for (let index = 0; index < data.lines.length; index += 1) {
     const line = data.lines[index];
     const autoPrior = await priorsForPerson(batch.bookId, line.personCode, batch.taxPeriod);
-    const priorGrossCents = line.priorGrossCents || autoPrior.priorGrossCents;
-    const priorSiCents = line.priorSiCents || autoPrior.priorSiCents;
-    const priorHfCents = line.priorHfCents || autoPrior.priorHfCents;
-    const priorTaxCents = line.priorTaxCents || autoPrior.priorTaxCents;
+    // 行上显式 prior* 为 0 时也走自动累计；只有调用方传入正数才覆盖（zod default 0）
+    const priorGrossCents = line.priorGrossCents > 0 ? line.priorGrossCents : autoPrior.priorGrossCents;
+    const priorSiCents = line.priorSiCents > 0 ? line.priorSiCents : autoPrior.priorSiCents;
+    const priorHfCents = line.priorHfCents > 0 ? line.priorHfCents : autoPrior.priorHfCents;
+    const priorTaxCents = line.priorTaxCents > 0 ? line.priorTaxCents : autoPrior.priorTaxCents;
     const tax = calculateSalaryTax({
       monthIndex,
       grossCents: line.grossCents,
@@ -325,6 +367,7 @@ export async function setPayrollLines(
       priorHfCents,
       priorTaxCents,
       estimatedTaxCents: tax.estimatedTaxCents,
+      bureauTaxCents: null,
       confirmedTaxCents: tax.estimatedTaxCents,
       taxAdjustReason: "",
       netCents: tax.netCents,
@@ -433,6 +476,200 @@ export async function confirmPayrollTax(
     });
   });
   return loadBatch(batchId);
+}
+
+export async function importBureauTax(
+  user: AuthUser,
+  batchId: string,
+  input: BureauTaxInput,
+) {
+  assertFinance(user);
+  const parsed = bureauTaxInput.safeParse(input);
+  if (!parsed.success) {
+    throw new PayrollError(
+      "税局导入字段不合要求。",
+      "PAYROLL_INVALID",
+      parsed.error.issues.map((issue) => issue.message).join("；"),
+    );
+  }
+  const data = parsed.data;
+  const batch = await loadBatch(batchId);
+  if (batch.lastMutationId === data.mutationId) return { batch, issues: [] as string[] };
+  if (batch.status !== "calculated" && batch.status !== "taxVerified") {
+    throw new PayrollError(
+      `状态 ${batch.status} 不能导入税局结果。`,
+      "PAYROLL_STATUS",
+      "先提交工资行并试算。",
+    );
+  }
+  if (batch.revision !== data.expectedRevision) {
+    throw new PayrollError("版本冲突。", "PAYROLL_REVISION_CONFLICT", "刷新后再提交。");
+  }
+  if (!batch.lines.length) {
+    throw new PayrollError("批次没有工资行。", "PAYROLL_INVALID", "先写入行。");
+  }
+
+  const byCode = new Map(batch.lines.map((line) => [line.personCode, line]));
+  const seen = new Set<string>();
+  const missing: string[] = [];
+  const unexpected: string[] = [];
+  const issues: string[] = [];
+
+  for (const row of data.results) {
+    if (seen.has(row.personCode)) {
+      issues.push(`人员 ${row.personCode} 在导入结果中重复。`);
+    }
+    seen.add(row.personCode);
+    if (!byCode.has(row.personCode)) unexpected.push(row.personCode);
+  }
+  for (const line of batch.lines) {
+    if (!seen.has(line.personCode)) missing.push(line.personCode);
+  }
+  if (missing.length || unexpected.length || issues.length) {
+    throw new PayrollError(
+      [
+        missing.length ? `缺人：${missing.join("、")}` : "",
+        unexpected.length ? `多人：${unexpected.join("、")}` : "",
+        ...issues,
+      ]
+        .filter(Boolean)
+        .join("；"),
+      "PAYROLL_TAX_COVERAGE",
+      "导入结果必须与本批次人员一一对应。",
+    );
+  }
+
+  const resultMap = new Map(data.results.map((row) => [row.personCode, row]));
+  const nextLines = batch.lines.map((line) => {
+    const row = resultMap.get(line.personCode)!;
+    const bureau = row.bureauTaxCents;
+    const confirmed = row.confirmedTaxCents ?? bureau;
+    const reason = (row.reason ?? "").trim();
+    if (confirmed !== line.estimatedTaxCents && !reason) {
+      issues.push(
+        `${line.personName}(${line.personCode}) 确认税 ${confirmed} 与试算 ${line.estimatedTaxCents} 不同，须填 reason。`,
+      );
+    }
+    if (confirmed !== bureau && !reason) {
+      issues.push(
+        `${line.personName}(${line.personCode}) 确认税与税局数不同，须填 reason。`,
+      );
+    }
+    return {
+      ...line,
+      bureauTaxCents: bureau,
+      confirmedTaxCents: confirmed,
+      taxAdjustReason: reason || line.taxAdjustReason,
+      netCents: netPayWithConfirmedTax({
+        grossCents: line.grossCents,
+        employeeSiCents: line.employeeSiCents,
+        housingFundCents: line.housingFundCents,
+        otherDeductionCents: line.otherDeductionCents,
+        confirmedTaxCents: confirmed,
+      }),
+    };
+  });
+  if (issues.length) {
+    throw new PayrollError(issues.join("；"), "PAYROLL_TAX_MISMATCH", "补齐差异原因或修正税额后再导入。");
+  }
+
+  const totals = totalsFromLines(nextLines);
+  await db.$transaction(async (tx) => {
+    for (const line of nextLines) {
+      await tx.payrollLine.update({
+        where: { id: line.id },
+        data: {
+          bureauTaxCents: line.bureauTaxCents,
+          confirmedTaxCents: line.confirmedTaxCents,
+          taxAdjustReason: line.taxAdjustReason,
+          netCents: line.netCents,
+        },
+      });
+    }
+    await tx.payrollBatch.update({
+      where: { id: batch.id, revision: data.expectedRevision },
+      data: {
+        status: "taxVerified",
+        revision: { increment: 1 },
+        lastMutationId: data.mutationId,
+        ...totals,
+        lockedAt: new Date(),
+        lockedBy: user.displayName,
+      },
+    });
+  });
+  return { batch: await loadBatch(batchId), issues: [] as string[] };
+}
+
+export async function listOpeningTax(bookId: string, year: number) {
+  return db.payrollOpeningTax.findMany({
+    where: { bookId, year },
+    orderBy: { personCode: "asc" },
+  });
+}
+
+export async function upsertOpeningTax(
+  user: AuthUser,
+  bookId: string,
+  input: OpeningTaxInput,
+) {
+  assertFinance(user);
+  const parsed = openingTaxInput.safeParse(input);
+  if (!parsed.success) {
+    throw new PayrollError(
+      "期初累计字段不合要求。",
+      "PAYROLL_INVALID",
+      parsed.error.issues.map((issue) => issue.message).join("；"),
+    );
+  }
+  const data = parsed.data;
+  const book = await db.book.findUnique({ where: { id: bookId } });
+  if (!book) throw new PayrollError("账套不存在。", "PAYROLL_INVALID", "先开账。");
+
+  const codes = new Set<string>();
+  for (const line of data.lines) {
+    if (codes.has(line.personCode)) {
+      throw new PayrollError(`人员编号重复：${line.personCode}。`, "PAYROLL_INVALID", "每人一行。");
+    }
+    codes.add(line.personCode);
+  }
+
+  await db.$transaction(async (tx) => {
+    for (const line of data.lines) {
+      await tx.payrollOpeningTax.upsert({
+        where: {
+          bookId_year_personCode: {
+            bookId,
+            year: data.year,
+            personCode: line.personCode,
+          },
+        },
+        create: {
+          id: randomUUID(),
+          bookId,
+          year: data.year,
+          personCode: line.personCode,
+          personName: line.personName ?? "",
+          grossCents: line.grossCents,
+          siCents: line.siCents,
+          hfCents: line.hfCents,
+          taxCents: line.taxCents,
+          remark: line.remark ?? "",
+          updatedBy: user.displayName,
+        },
+        update: {
+          personName: line.personName ?? "",
+          grossCents: line.grossCents,
+          siCents: line.siCents,
+          hfCents: line.hfCents,
+          taxCents: line.taxCents,
+          remark: line.remark ?? "",
+          updatedBy: user.displayName,
+        },
+      });
+    }
+  });
+  return listOpeningTax(bookId, data.year);
 }
 
 export async function unconfirmPayrollTax(

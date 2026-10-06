@@ -88,7 +88,14 @@ type PayrollBatch = {
   taxCents: number;
   netCents: number;
   paidCents: number;
-  lines?: Array<{ personCode: string; personName: string; netCents: number; confirmedTaxCents: number }>;
+  lines?: Array<{
+    personCode: string;
+    personName: string;
+    netCents: number;
+    estimatedTaxCents: number;
+    confirmedTaxCents: number;
+    bureauTaxCents?: number | null;
+  }>;
 };
 
 function yuan(cents: number) {
@@ -444,6 +451,51 @@ export default function Page() {
     setPayroll(payload.batch);
     setNotice("个税已确认");
     await refreshPayrollFor();
+  }
+
+  async function payrollImportBureau(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!payroll?.lines?.length) return;
+    const form = new FormData(event.currentTarget);
+    const bureauYuan = Number(form.get("bureauYuan") || 0);
+    const reason = String(form.get("reason") || "");
+    const line = payroll.lines[0];
+    const bureauCents = Math.round(bureauYuan * 100);
+    const payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${payroll.id}/bureau-tax`, {
+      expectedRevision: payroll.revision,
+      mutationId: `pb-bureau-ui-${Date.now()}`,
+      results: [
+        {
+          personCode: line.personCode,
+          bureauTaxCents: bureauCents,
+          reason: bureauCents !== line.estimatedTaxCents ? reason || "扣缴端结果" : reason,
+        },
+      ],
+    });
+    setPayroll(payload.batch);
+    setNotice(`已导入税局个税并确认，实发 ${yuan(payload.batch.netCents)}`);
+    await refreshPayrollFor();
+  }
+
+  async function saveOpeningTax(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    await call(`/api/books/${bookId}/payroll/opening-tax`, {
+      year: Number(form.get("year") || 2026),
+      mutationId: `open-ui-${Date.now()}`,
+      lines: [
+        {
+          personCode: String(form.get("personCode") || "E001"),
+          personName: String(form.get("personName") || "张三"),
+          grossCents: Math.round(Number(form.get("grossYuan") || 0) * 100),
+          siCents: Math.round(Number(form.get("siYuan") || 0) * 100),
+          hfCents: Math.round(Number(form.get("hfYuan") || 0) * 100),
+          taxCents: Math.round(Number(form.get("taxYuan") || 0) * 100),
+        },
+      ],
+    }, "PUT");
+    setNotice("期初累计已保存，下次试算会自动带入");
   }
 
   async function payrollPost() {
@@ -916,7 +968,7 @@ export default function Page() {
                       disabled={(!roles.includes("finance") && !roles.includes("gm")) || payroll.status !== "calculated"}
                       onClick={payrollConfirmTax}
                     >
-                      确认个税
+                      按试算确认
                     </Button>
                     <Button
                       disabled={(!roles.includes("finance") && !roles.includes("gm")) || payroll.status !== "taxVerified"}
@@ -925,6 +977,29 @@ export default function Page() {
                       过账
                     </Button>
                   </div>
+                  <form className="mt-2 space-y-2" onSubmit={payrollImportBureau}>
+                    <p className="text-stone-500">
+                      试算个税 {yuan(payroll.lines?.[0]?.estimatedTaxCents ?? payroll.taxCents)}
+                      {payroll.lines?.[0]?.bureauTaxCents != null
+                        ? ` · 税局 ${yuan(payroll.lines[0].bureauTaxCents)}`
+                        : ""}
+                    </p>
+                    <Input
+                      name="bureauYuan"
+                      placeholder="税局个税（元）"
+                      defaultValue={((payroll.lines?.[0]?.estimatedTaxCents ?? payroll.taxCents) / 100).toFixed(2)}
+                      disabled={payroll.status !== "calculated" && payroll.status !== "taxVerified"}
+                    />
+                    <Input name="reason" placeholder="与试算不同时的原因" disabled={payroll.status !== "calculated" && payroll.status !== "taxVerified"} />
+                    <Button
+                      disabled={
+                        (!roles.includes("finance") && !roles.includes("gm")) ||
+                        (payroll.status !== "calculated" && payroll.status !== "taxVerified")
+                      }
+                    >
+                      导入税局并确认
+                    </Button>
+                  </form>
                   <form className="mt-2" onSubmit={payrollPay}>
                     <Input name="statementId" placeholder="银行流水 id" required disabled={payroll.status !== "posted" && payroll.status !== "paid"} />
                     <Input
@@ -948,6 +1023,19 @@ export default function Page() {
               ) : (
                 <p className="mt-3 text-sm text-stone-500">先创建或选择左侧批次。</p>
               )}
+              <form className="mt-4 border-t border-stone-200 pt-3" onSubmit={saveOpeningTax}>
+                <p className="text-sm font-medium">个税期初累计（财务）</p>
+                <Input className="mt-2" name="year" placeholder="年份" defaultValue="2026" disabled={!bookId} />
+                <Input className="mt-2" name="personCode" placeholder="人员编号" defaultValue="E001" disabled={!bookId} />
+                <Input className="mt-2" name="personName" placeholder="姓名" defaultValue="张三" disabled={!bookId} />
+                <Input className="mt-2" name="grossYuan" placeholder="累计应发（元）" defaultValue="0" disabled={!bookId} />
+                <Input className="mt-2" name="siYuan" placeholder="累计个人社保（元）" defaultValue="0" disabled={!bookId} />
+                <Input className="mt-2" name="hfYuan" placeholder="累计个人公积金（元）" defaultValue="0" disabled={!bookId} />
+                <Input className="mt-2" name="taxYuan" placeholder="累计已扣个税（元）" defaultValue="0" disabled={!bookId} />
+                <Button className="mt-2" disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>
+                  保存期初
+                </Button>
+              </form>
             </Card>
           </section>
 

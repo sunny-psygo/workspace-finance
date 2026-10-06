@@ -4,8 +4,11 @@ import {
   allocatePayrollPayment,
   confirmPayrollTax,
   createPayrollBatch,
+  importBureauTax,
+  PayrollError,
   postPayrollBatch,
   setPayrollLines,
+  upsertOpeningTax,
 } from "./payroll";
 import { closePeriod, LedgerError, openBook, trialBalance } from "./ledger";
 import { importBankStatement } from "./payment";
@@ -99,6 +102,76 @@ async function main() {
   assert.equal(paid.paidCents, 839_500);
 
   await closePeriod(book.id, "2026-01", "财务李", "工资已付");
+
+  // 税局导入：差异无原因拒绝；有原因通过
+  const book2 = await openBook(`税局账-${Date.now().toString(36)}`);
+  const b2 = await createPayrollBatch(hr, book2.id, { period: "2026-01", mutationId: "tb-1" });
+  const b2Lines = await setPayrollLines(hr, b2.id, {
+    expectedRevision: 0,
+    mutationId: "tb-lines",
+    lines: [
+      {
+        personCode: "E001",
+        personName: "张三",
+        grossCents: 1_000_000,
+        employeeSiCents: 100_000,
+        housingFundCents: 50_000,
+      },
+    ],
+  });
+  await assert.rejects(
+    () =>
+      importBureauTax(finance, b2Lines.id, {
+        expectedRevision: b2Lines.revision,
+        mutationId: "tb-bad",
+        results: [{ personCode: "E001", bureauTaxCents: 12_000 }],
+      }),
+    (error: unknown) => error instanceof PayrollError && error.code === "PAYROLL_TAX_MISMATCH",
+  );
+  const verified2 = await importBureauTax(finance, b2Lines.id, {
+    expectedRevision: b2Lines.revision,
+    mutationId: "tb-ok",
+    results: [{ personCode: "E001", bureauTaxCents: 12_000, reason: "扣缴端结果" }],
+  });
+  assert.equal(verified2.batch.status, "taxVerified");
+  assert.equal(verified2.batch.taxCents, 12_000);
+  assert.equal(verified2.batch.netCents, 838_000);
+  assert.equal(verified2.batch.lines[0]?.bureauTaxCents, 12_000);
+
+  // 期初累计：9 月前累计后，10 月试算带 prior
+  const book3 = await openBook(`期初账-${Date.now().toString(36)}`);
+  await upsertOpeningTax(finance, book3.id, {
+    year: 2026,
+    mutationId: "open-1",
+    lines: [
+      {
+        personCode: "E001",
+        personName: "张三",
+        grossCents: 9_000_000,
+        siCents: 900_000,
+        hfCents: 450_000,
+        taxCents: 90_000,
+      },
+    ],
+  });
+  const b3 = await createPayrollBatch(hr, book3.id, { period: "2026-10", mutationId: "ob-1" });
+  const b3Lines = await setPayrollLines(hr, b3.id, {
+    expectedRevision: 0,
+    mutationId: "ob-lines",
+    lines: [
+      {
+        personCode: "E001",
+        personName: "张三",
+        grossCents: 1_000_000,
+        employeeSiCents: 100_000,
+        housingFundCents: 50_000,
+      },
+    ],
+  });
+  assert.equal(b3Lines.lines[0]?.priorGrossCents, 9_000_000);
+  assert.equal(b3Lines.lines[0]?.priorTaxCents, 90_000);
+  assert.ok((b3Lines.lines[0]?.estimatedTaxCents ?? 0) >= 0);
+
   console.log("payroll ok");
 }
 
