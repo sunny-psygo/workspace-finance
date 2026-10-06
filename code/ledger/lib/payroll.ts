@@ -8,6 +8,7 @@ import {
   monthIndexFromPeriod,
   netPayWithConfirmedTax,
 } from "./payroll-tax";
+import { parseBureauTaxCsv, parseHrPayrollCsv, PayrollCsvError } from "./payroll-csv";
 
 export class PayrollError extends Error {
   constructor(
@@ -280,6 +281,60 @@ export async function createPayrollBatch(
     },
     include: batchInclude,
   });
+}
+
+export async function setPayrollLinesFromCsv(
+  user: AuthUser,
+  batchId: string,
+  input: { expectedRevision: number; mutationId: string; csv: string },
+) {
+  try {
+    const rows = parseHrPayrollCsv(input.csv);
+    return setPayrollLines(user, batchId, {
+      expectedRevision: input.expectedRevision,
+      mutationId: input.mutationId,
+      lines: rows,
+    });
+  } catch (error) {
+    if (error instanceof PayrollCsvError) {
+      throw new PayrollError(error.message, error.code, error.next);
+    }
+    throw error;
+  }
+}
+
+export async function importBureauTaxFromCsv(
+  user: AuthUser,
+  batchId: string,
+  input: { expectedRevision: number; mutationId: string; csv: string },
+) {
+  const batch = await loadBatch(batchId);
+  try {
+    const rows = parseBureauTaxCsv(input.csv);
+    const byCode = new Map(batch.lines.map((line) => [line.personCode, line]));
+    const byName = new Map(batch.lines.map((line) => [line.personName, line]));
+    const results = rows.map((row) => {
+      const matched =
+        byCode.get(row.personCode) ||
+        (row.personName ? byName.get(row.personName) : undefined) ||
+        byName.get(row.personCode);
+      return {
+        personCode: matched?.personCode ?? row.personCode,
+        bureauTaxCents: row.bureauTaxCents,
+        reason: row.reason,
+      };
+    });
+    return importBureauTax(user, batchId, {
+      expectedRevision: input.expectedRevision,
+      mutationId: input.mutationId,
+      results,
+    });
+  } catch (error) {
+    if (error instanceof PayrollCsvError) {
+      throw new PayrollError(error.message, error.code, error.next);
+    }
+    throw error;
+  }
 }
 
 export async function setPayrollLines(

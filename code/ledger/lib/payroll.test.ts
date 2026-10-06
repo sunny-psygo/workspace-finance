@@ -5,11 +5,14 @@ import {
   confirmPayrollTax,
   createPayrollBatch,
   importBureauTax,
+  importBureauTaxFromCsv,
   PayrollError,
   postPayrollBatch,
   setPayrollLines,
+  setPayrollLinesFromCsv,
   upsertOpeningTax,
 } from "./payroll";
+import { parseHrPayrollCsv, parseBureauTaxCsv } from "./payroll-csv";
 import { closePeriod, LedgerError, openBook, trialBalance } from "./ledger";
 import { importBankStatement } from "./payment";
 import { login } from "./auth";
@@ -171,6 +174,38 @@ async function main() {
   assert.equal(b3Lines.lines[0]?.priorGrossCents, 9_000_000);
   assert.equal(b3Lines.lines[0]?.priorTaxCents, 90_000);
   assert.ok((b3Lines.lines[0]?.estimatedTaxCents ?? 0) >= 0);
+
+  // CSV：人事表 + 税局表
+  const hrRows = parseHrPayrollCsv(`人员编号,姓名,应发,个人社保,个人公积金,其他扣款
+E002,李四,"12,000.50",800,400,0
+`);
+  assert.equal(hrRows[0]?.grossCents, 1_200_050);
+  assert.equal(hrRows[0]?.employeeSiCents, 80_000);
+
+  const book4 = await openBook(`CSV账-${Date.now().toString(36)}`);
+  const b4 = await createPayrollBatch(hr, book4.id, { period: "2026-01", mutationId: "csv-b" });
+  const b4Lines = await setPayrollLinesFromCsv(hr, b4.id, {
+    expectedRevision: 0,
+    mutationId: "csv-lines",
+    csv: `人员编号,姓名,应发,个人社保,个人公积金
+E001,张三,10000,1000,500
+`,
+  });
+  assert.equal(b4Lines.status, "calculated");
+  assert.equal(b4Lines.taxCents, 10_500);
+  const bureauRows = parseBureauTaxCsv(`人员编号,本期个税,差异原因
+E001,120,扣缴端
+`);
+  assert.equal(bureauRows[0]?.bureauTaxCents, 12_000);
+  const b4Tax = await importBureauTaxFromCsv(finance, b4Lines.id, {
+    expectedRevision: b4Lines.revision,
+    mutationId: "csv-tax",
+    csv: `人员编号,本期个税,差异原因
+E001,120,扣缴端
+`,
+  });
+  assert.equal(b4Tax.batch.status, "taxVerified");
+  assert.equal(b4Tax.batch.taxCents, 12_000);
 
   console.log("payroll ok");
 }

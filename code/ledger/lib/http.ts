@@ -3,6 +3,7 @@ import { AuthError } from "./auth";
 import { ClaimError } from "./claim";
 import { LedgerError } from "./ledger";
 import { PayrollError } from "./payroll";
+import { PayrollCsvError } from "./payroll-csv";
 
 export function fail(error: unknown) {
   if (error instanceof AuthError) {
@@ -16,7 +17,12 @@ export function fail(error: unknown) {
       { status },
     );
   }
-  if (error instanceof LedgerError || error instanceof ClaimError || error instanceof PayrollError) {
+  if (
+    error instanceof LedgerError ||
+    error instanceof ClaimError ||
+    error instanceof PayrollError ||
+    error instanceof PayrollCsvError
+  ) {
     const status =
       error.code === "CLAIM_REVISION_CONFLICT" ||
       error.code === "CLAIM_STATUS_CHANGED" ||

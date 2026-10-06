@@ -417,26 +417,40 @@ export default function Page() {
       period,
       mutationId: `pb-ui-${Date.now()}`,
     });
-    const grossYuan = Number(form.get("grossYuan") || 0);
-    const siYuan = Number(form.get("siYuan") || 0);
-    const hfYuan = Number(form.get("hfYuan") || 0);
-    const withLines = await call<{ batch: PayrollBatch }>(
-      `/api/payroll/batches/${created.batch.id}/lines`,
-      {
-        expectedRevision: created.batch.revision,
-        mutationId: `pb-lines-ui-${Date.now()}`,
-        lines: [
-          {
-            personCode: String(form.get("personCode") || "E001"),
-            personName: String(form.get("personName") || "张三"),
-            grossCents: Math.round(grossYuan * 100),
-            employeeSiCents: Math.round(siYuan * 100),
-            housingFundCents: Math.round(hfYuan * 100),
-          },
-        ],
-      },
-      "PUT",
-    );
+    const csv = String(form.get("csv") || "").trim();
+    let withLines: { batch: PayrollBatch };
+    if (csv) {
+      withLines = await call<{ batch: PayrollBatch }>(
+        `/api/payroll/batches/${created.batch.id}/lines-csv`,
+        {
+          expectedRevision: created.batch.revision,
+          mutationId: `pb-csv-ui-${Date.now()}`,
+          csv,
+        },
+        "PUT",
+      );
+    } else {
+      const grossYuan = Number(form.get("grossYuan") || 0);
+      const siYuan = Number(form.get("siYuan") || 0);
+      const hfYuan = Number(form.get("hfYuan") || 0);
+      withLines = await call<{ batch: PayrollBatch }>(
+        `/api/payroll/batches/${created.batch.id}/lines`,
+        {
+          expectedRevision: created.batch.revision,
+          mutationId: `pb-lines-ui-${Date.now()}`,
+          lines: [
+            {
+              personCode: String(form.get("personCode") || "E001"),
+              personName: String(form.get("personName") || "张三"),
+              grossCents: Math.round(grossYuan * 100),
+              employeeSiCents: Math.round(siYuan * 100),
+              housingFundCents: Math.round(hfYuan * 100),
+            },
+          ],
+        },
+        "PUT",
+      );
+    }
     setPayroll(withLines.batch);
     setNotice(`工资批次已试算，个税 ${yuan(withLines.batch.taxCents)}，实发 ${yuan(withLines.batch.netCents)}`);
     await refreshPayrollFor();
@@ -457,21 +471,31 @@ export default function Page() {
     event.preventDefault();
     if (!payroll?.lines?.length) return;
     const form = new FormData(event.currentTarget);
-    const bureauYuan = Number(form.get("bureauYuan") || 0);
-    const reason = String(form.get("reason") || "");
-    const line = payroll.lines[0];
-    const bureauCents = Math.round(bureauYuan * 100);
-    const payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${payroll.id}/bureau-tax`, {
-      expectedRevision: payroll.revision,
-      mutationId: `pb-bureau-ui-${Date.now()}`,
-      results: [
-        {
-          personCode: line.personCode,
-          bureauTaxCents: bureauCents,
-          reason: bureauCents !== line.estimatedTaxCents ? reason || "扣缴端结果" : reason,
-        },
-      ],
-    });
+    const csv = String(form.get("bureauCsv") || "").trim();
+    let payload: { batch: PayrollBatch };
+    if (csv) {
+      payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${payroll.id}/bureau-tax-csv`, {
+        expectedRevision: payroll.revision,
+        mutationId: `pb-bureau-csv-${Date.now()}`,
+        csv,
+      });
+    } else {
+      const bureauYuan = Number(form.get("bureauYuan") || 0);
+      const reason = String(form.get("reason") || "");
+      const line = payroll.lines[0];
+      const bureauCents = Math.round(bureauYuan * 100);
+      payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${payroll.id}/bureau-tax`, {
+        expectedRevision: payroll.revision,
+        mutationId: `pb-bureau-ui-${Date.now()}`,
+        results: [
+          {
+            personCode: line.personCode,
+            bureauTaxCents: bureauCents,
+            reason: bureauCents !== line.estimatedTaxCents ? reason || "扣缴端结果" : reason,
+          },
+        ],
+      });
+    }
     setPayroll(payload.batch);
     setNotice(`已导入税局个税并确认，实发 ${yuan(payload.batch.netCents)}`);
     await refreshPayrollFor();
@@ -929,6 +953,12 @@ export default function Page() {
                 <Input className="mt-2" name="grossYuan" placeholder="应发（元）" defaultValue="10000" disabled={!bookId} />
                 <Input className="mt-2" name="siYuan" placeholder="个人社保（元）" defaultValue="1000" disabled={!bookId} />
                 <Input className="mt-2" name="hfYuan" placeholder="个人公积金（元）" defaultValue="500" disabled={!bookId} />
+                <textarea
+                  className="mt-2 h-24 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                  name="csv"
+                  placeholder={"多人可粘贴 CSV：\n人员编号,姓名,应发,个人社保,个人公积金,其他扣款\nE001,张三,10000,1000,500,0"}
+                  disabled={!bookId}
+                />
                 <Button
                   className="mt-3"
                   disabled={!bookId || (!roles.includes("hr") && !roles.includes("finance") && !roles.includes("gm"))}
@@ -986,11 +1016,17 @@ export default function Page() {
                     </p>
                     <Input
                       name="bureauYuan"
-                      placeholder="税局个税（元）"
+                      placeholder="税局个税（元，单人）"
                       defaultValue={((payroll.lines?.[0]?.estimatedTaxCents ?? payroll.taxCents) / 100).toFixed(2)}
                       disabled={payroll.status !== "calculated" && payroll.status !== "taxVerified"}
                     />
                     <Input name="reason" placeholder="与试算不同时的原因" disabled={payroll.status !== "calculated" && payroll.status !== "taxVerified"} />
+                    <textarea
+                      className="h-20 w-full rounded-md border border-stone-300 px-3 py-2 text-sm"
+                      name="bureauCsv"
+                      placeholder={"多人可粘贴 CSV：\n人员编号,本期个税,差异原因\nE001,105,"}
+                      disabled={payroll.status !== "calculated" && payroll.status !== "taxVerified"}
+                    />
                     <Button
                       disabled={
                         (!roles.includes("finance") && !roles.includes("gm")) ||

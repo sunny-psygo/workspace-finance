@@ -24,6 +24,7 @@
 | 年末结转未分配利润 | `design/year-end-close.md` |
 | 工资批次（试算/确认/过账/付实发） | `design/payroll.md` |
 | 税局个税导入与期初累计 | `design/payroll-tax-import.md` |
+| 工资/税局 CSV 解析 | `design/payroll-csv.md` |
 
 ## 本地
 
