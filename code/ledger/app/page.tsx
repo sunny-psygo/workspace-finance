@@ -79,6 +79,18 @@ type BankRecon = {
   }>;
 };
 
+type PayrollBatch = {
+  id: string;
+  period: string;
+  status: string;
+  revision: number;
+  grossCents: number;
+  taxCents: number;
+  netCents: number;
+  paidCents: number;
+  lines?: Array<{ personCode: string; personName: string; netCents: number; confirmedTaxCents: number }>;
+};
+
 function yuan(cents: number) {
   return (cents / 100).toFixed(2);
 }
@@ -106,6 +118,8 @@ export default function Page() {
   const [books, setBooks] = useState<Array<{ id: string; name: string }>>([]);
   const [statements, setStatements] = useState<Statement[]>([]);
   const [recon, setRecon] = useState<BankRecon | null>(null);
+  const [payrollBatches, setPayrollBatches] = useState<PayrollBatch[]>([]);
+  const [payroll, setPayroll] = useState<PayrollBatch | null>(null);
   const [users, setUsers] = useState<Array<User & { active: boolean }>>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
@@ -166,14 +180,22 @@ export default function Page() {
     setAllClaims(allPayload.claims);
   }
 
+  async function refreshPayrollFor(id = bookId) {
+    if (!id) return;
+    const payload = await call<{ batches: PayrollBatch[] }>(`/api/books/${id}/payroll/batches`);
+    setPayrollBatches(payload.batches);
+  }
+
   async function selectBook(id: string) {
     setBookId(id);
     setClaim(null);
+    setPayroll(null);
     setNotice(`当前账套：${id}`);
     await refreshBalanceFor(id);
     await refreshClaims(id);
     await refreshStatementsFor(id);
     await refreshReconFor(id);
+    await refreshPayrollFor(id);
   }
 
   async function refreshReconFor(id = bookId) {
@@ -379,6 +401,80 @@ export default function Page() {
     await refreshBalance();
   }
 
+  async function createPayroll(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    const period = String(form.get("period") || "2026-01");
+    const created = await call<{ batch: PayrollBatch }>(`/api/books/${bookId}/payroll/batches`, {
+      period,
+      mutationId: `pb-ui-${Date.now()}`,
+    });
+    const grossYuan = Number(form.get("grossYuan") || 0);
+    const siYuan = Number(form.get("siYuan") || 0);
+    const hfYuan = Number(form.get("hfYuan") || 0);
+    const withLines = await call<{ batch: PayrollBatch }>(
+      `/api/payroll/batches/${created.batch.id}/lines`,
+      {
+        expectedRevision: created.batch.revision,
+        mutationId: `pb-lines-ui-${Date.now()}`,
+        lines: [
+          {
+            personCode: String(form.get("personCode") || "E001"),
+            personName: String(form.get("personName") || "张三"),
+            grossCents: Math.round(grossYuan * 100),
+            employeeSiCents: Math.round(siYuan * 100),
+            housingFundCents: Math.round(hfYuan * 100),
+          },
+        ],
+      },
+      "PUT",
+    );
+    setPayroll(withLines.batch);
+    setNotice(`工资批次已试算，个税 ${yuan(withLines.batch.taxCents)}，实发 ${yuan(withLines.batch.netCents)}`);
+    await refreshPayrollFor();
+  }
+
+  async function payrollConfirmTax() {
+    if (!payroll) return;
+    const payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${payroll.id}/confirm-tax`, {
+      expectedRevision: payroll.revision,
+      mutationId: `pb-tax-ui-${Date.now()}`,
+    });
+    setPayroll(payload.batch);
+    setNotice("个税已确认");
+    await refreshPayrollFor();
+  }
+
+  async function payrollPost() {
+    if (!payroll) return;
+    const payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${payroll.id}/post`, {
+      expectedRevision: payroll.revision,
+      mutationId: `pb-post-ui-${Date.now()}`,
+    });
+    setPayroll(payload.batch);
+    setNotice("工资已过账");
+    await refreshBalance();
+    await refreshPayrollFor();
+  }
+
+  async function payrollPay(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!payroll) return;
+    const form = new FormData(event.currentTarget);
+    const payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${payroll.id}/payments`, {
+      statementId: form.get("statementId"),
+      cents: Math.round(Number(form.get("yuan") || 0) * 100),
+      expectedRevision: payroll.revision,
+      mutationId: `pb-pay-ui-${Date.now()}`,
+    });
+    setPayroll(payload.batch);
+    setNotice(`工资付款 ${payload.batch.status}`);
+    await refreshBalance();
+    await refreshStatements();
+    await refreshPayrollFor();
+  }
+
   async function refreshUsers() {
     const payload = await call<{ users: Array<User & { active: boolean }> }>("/api/auth/users");
     setUsers(payload.users);
@@ -446,7 +542,7 @@ export default function Page() {
             <Button className="mt-3" type="submit">登录</Button>
           </form>
           <p className="mt-4 text-sm text-stone-500">
-            演示：zhangsan / finance / gm / cashier，密码均为 Passw0rd!
+            演示：zhangsan / hr / finance / gm / cashier，密码均为 Passw0rd!
           </p>
         </Card>
       ) : (
@@ -770,6 +866,90 @@ export default function Page() {
               </Card>
             </section>
           ) : null}
+
+          <section className="mt-6 grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardTitle>工资批次</CardTitle>
+              <form className="mt-3" onSubmit={createPayroll}>
+                <Input name="period" placeholder="YYYY-MM" defaultValue="2026-01" required disabled={!bookId} />
+                <Input className="mt-2" name="personCode" placeholder="人员编号" defaultValue="E001" disabled={!bookId} />
+                <Input className="mt-2" name="personName" placeholder="姓名" defaultValue="张三" disabled={!bookId} />
+                <Input className="mt-2" name="grossYuan" placeholder="应发（元）" defaultValue="10000" disabled={!bookId} />
+                <Input className="mt-2" name="siYuan" placeholder="个人社保（元）" defaultValue="1000" disabled={!bookId} />
+                <Input className="mt-2" name="hfYuan" placeholder="个人公积金（元）" defaultValue="500" disabled={!bookId} />
+                <Button
+                  className="mt-3"
+                  disabled={!bookId || (!roles.includes("hr") && !roles.includes("finance") && !roles.includes("gm"))}
+                >
+                  创建并试算
+                </Button>
+              </form>
+              <ul className="mt-3 max-h-32 space-y-1 overflow-auto text-sm">
+                {payrollBatches.length === 0 ? <li className="text-stone-500">暂无工资批次</li> : null}
+                {payrollBatches.map((row) => (
+                  <li key={row.id}>
+                    <button
+                      type="button"
+                      className={`text-left underline ${payroll?.id === row.id ? "text-stone-900" : "text-sky-700"}`}
+                      onClick={async () => {
+                        const payload = await call<{ batch: PayrollBatch }>(`/api/payroll/batches/${row.id}`);
+                        setPayroll(payload.batch);
+                        setNotice(`已选工资 ${payload.batch.period} ${payload.batch.status}`);
+                      }}
+                    >
+                      {row.period} · {row.status} · 实发 {yuan(row.netCents)} · 已付 {yuan(row.paidCents)}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+            <Card>
+              <CardTitle>工资处理</CardTitle>
+              {payroll ? (
+                <div className="mt-3 space-y-2 text-sm">
+                  <p>
+                    {payroll.period} · {payroll.status} · 应发 {yuan(payroll.grossCents)} · 个税 {yuan(payroll.taxCents)} · 实发{" "}
+                    {yuan(payroll.netCents)}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      disabled={(!roles.includes("finance") && !roles.includes("gm")) || payroll.status !== "calculated"}
+                      onClick={payrollConfirmTax}
+                    >
+                      确认个税
+                    </Button>
+                    <Button
+                      disabled={(!roles.includes("finance") && !roles.includes("gm")) || payroll.status !== "taxVerified"}
+                      onClick={payrollPost}
+                    >
+                      过账
+                    </Button>
+                  </div>
+                  <form className="mt-2" onSubmit={payrollPay}>
+                    <Input name="statementId" placeholder="银行流水 id" required disabled={payroll.status !== "posted" && payroll.status !== "paid"} />
+                    <Input
+                      className="mt-2"
+                      name="yuan"
+                      placeholder="付款金额（元）"
+                      defaultValue={(Math.max(0, payroll.netCents - payroll.paidCents) / 100).toFixed(2)}
+                      disabled={payroll.status !== "posted" && payroll.status !== "paid"}
+                    />
+                    <Button
+                      className="mt-2"
+                      disabled={
+                        (!roles.includes("cashier") && !roles.includes("finance")) ||
+                        (payroll.status !== "posted" && payroll.status !== "paid")
+                      }
+                    >
+                      匹配流水付实发
+                    </Button>
+                  </form>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-stone-500">先创建或选择左侧批次。</p>
+              )}
+            </Card>
+          </section>
 
           <section className="mt-8 overflow-hidden rounded-lg bg-white shadow-sm">
             <table className="w-full text-left text-sm">

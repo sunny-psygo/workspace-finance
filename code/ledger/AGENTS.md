@@ -22,11 +22,12 @@
 | 期间锁定与未完单检查 | `design/period-close.md` |
 | 结账结转损益 | `design/pl-close.md` |
 | 年末结转未分配利润 | `design/year-end-close.md` |
+| 工资批次（试算/确认/过账/付实发） | `design/payroll.md` |
 
 ## 本地
 
 - PostgreSQL：`127.0.0.1:5432`，库/用户 `ledger`
 - 页面：`npm run dev` → http://127.0.0.1:3210
-- 种子账号：`npm run seed`（zhangsan/finance/gm/cashier，密码 `Passw0rd!`）
+- 种子账号：`npm run seed`（zhangsan/hr/finance/gm/cashier，密码 `Passw0rd!`）
 
 改能力时，同一提交更新 `overview.html` 顶部三节。

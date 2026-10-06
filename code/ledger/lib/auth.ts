@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { db } from "./db";
 
-export const allRoles = ["employee", "finance", "gm", "cashier"] as const;
+export const allRoles = ["employee", "finance", "gm", "cashier", "hr"] as const;
 export type Role = (typeof allRoles)[number];
 
 export class AuthError extends Error {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { AuthError } from "./auth";
 import { ClaimError } from "./claim";
 import { LedgerError } from "./ledger";
+import { PayrollError } from "./payroll";
 
 export function fail(error: unknown) {
   if (error instanceof AuthError) {
@@ -15,12 +16,15 @@ export function fail(error: unknown) {
       { status },
     );
   }
-  if (error instanceof LedgerError || error instanceof ClaimError) {
-    const status = error.code === "CLAIM_REVISION_CONFLICT" || error.code === "CLAIM_STATUS_CHANGED"
-      ? 409
-      : error.code === "CLAIM_FORBIDDEN"
-        ? 403
-        : 400;
+  if (error instanceof LedgerError || error instanceof ClaimError || error instanceof PayrollError) {
+    const status =
+      error.code === "CLAIM_REVISION_CONFLICT" ||
+      error.code === "CLAIM_STATUS_CHANGED" ||
+      error.code === "PAYROLL_REVISION_CONFLICT"
+        ? 409
+        : error.code === "CLAIM_FORBIDDEN" || error.code === "PAYROLL_FORBIDDEN"
+          ? 403
+          : 400;
     return NextResponse.json(
       { ok: false, code: error.code, message: error.message, next: error.next },
       { status },

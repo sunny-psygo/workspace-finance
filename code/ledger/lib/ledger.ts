@@ -172,6 +172,24 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     );
   }
 
+  const openPayroll = await db.payrollBatch.findMany({
+    where: {
+      bookId,
+      period: yearMonth,
+      status: { in: ["draft", "calculated", "taxVerified", "posted"] },
+    },
+    select: { id: true, status: true },
+    take: 20,
+  });
+  if (openPayroll.length) {
+    const detail = openPayroll.map((row) => `${row.id.slice(0, 8)}:${row.status}`).join("、");
+    throw new LedgerError(
+      `期间 ${yearMonth} 仍有未完工资批次：${detail}。`,
+      "PERIOD_HAS_OPEN_PAYROLL",
+      "先确认个税、过账并付清实发，再结账。",
+    );
+  }
+
   await ensureDefaultAccounts(bookId);
 
   return db.$transaction(async (tx) => {
@@ -305,6 +323,8 @@ export async function reopenPeriod(bookId: string, yearMonth: string, remark: st
 
 const defaultAccounts: AccountInput[] = [
   { code: "1002", name: "银行存款", kind: "asset" },
+  { code: "2211", name: "应付职工薪酬", kind: "liability" },
+  { code: "2221", name: "应交税费", kind: "liability" },
   { code: "2241", name: "其他应付款", kind: "liability" },
   { code: "4103", name: "本年利润", kind: "equity" },
   { code: "4104", name: "未分配利润", kind: "equity" },

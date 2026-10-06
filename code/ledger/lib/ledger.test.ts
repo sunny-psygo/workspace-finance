@@ -18,7 +18,7 @@ async function main() {
   const seeded = await db.account.findMany({ where: { bookId: book.id }, orderBy: { code: "asc" } });
   assert.deepEqual(
     seeded.map((row) => row.code),
-    ["1002", "2241", "4103", "4104", "5602"],
+    ["1002", "2211", "2221", "2241", "4103", "4104", "5602"],
   );
   await addAccount(book.id, { code: "1001", name: "库存现金", kind: "asset" });
   await addAccount(book.id, { code: "5001", name: "管理费用手工", kind: "expense" });

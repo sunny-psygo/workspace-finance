@@ -16,7 +16,7 @@ model User {
   displayName  String
   // bcrypt 哈希，绝不存明文
   passwordHash String
-  // 逗号分隔：employee,finance,gm,cashier
+  // 逗号分隔：employee,finance,gm,cashier,hr
   roles        String
   active       Boolean   @default(true)
   createdAt    DateTime  @default(now())
@@ -34,16 +34,17 @@ model Session {
 }
 
 model Book {
-  id         String              @id
-  name       String
-  currency   String              @default("CNY")
-  createdAt  DateTime            @default(now())
-  accounts   Account[]
-  entries    Entry[]
-  claims     Claim[]
-  statements BankStatement[]
-  periods    AccountingPeriod[]
-  yearCloses YearClose[]
+  id             String           @id
+  name           String
+  currency       String           @default("CNY")
+  createdAt      DateTime         @default(now())
+  accounts       Account[]
+  entries        Entry[]
+  claims         Claim[]
+  statements     BankStatement[]
+  periods        AccountingPeriod[]
+  yearCloses     YearClose[]
+  payrollBatches PayrollBatch[]
 }
 
 model AccountingPeriod {
@@ -199,25 +200,110 @@ model ClaimEvent {
 
 // 银行支出流水：可分次匹配到待付款单据；从未匹配的可作废
 model BankStatement {
-  id              String              @id
-  bookId          String
-  book            Book                @relation(fields: [bookId], references: [id])
-  paidOn          String
+  id                 String                      @id
+  bookId             String
+  book               Book                        @relation(fields: [bookId], references: [id])
+  paidOn             String
   // 流出为正（分）
-  cents           Int
-  remainingCents  Int
-  bankAccountCode String
-  reference       String
-  counterparty    String              @default("")
-  remark          String              @default("")
-  createdAt       DateTime            @default(now())
-  voidedAt        DateTime?
-  voidedBy        String              @default("")
-  voidRemark      String              @default("")
-  allocations     PaymentAllocation[]
+  cents              Int
+  remainingCents     Int
+  bankAccountCode    String
+  reference          String
+  counterparty       String                      @default("")
+  remark             String                      @default("")
+  createdAt          DateTime                    @default(now())
+  voidedAt           DateTime?
+  voidedBy           String                      @default("")
+  voidRemark         String                      @default("")
+  allocations        PaymentAllocation[]
+  payrollAllocations PayrollPaymentAllocation[]
 
   @@unique([bookId, reference])
   @@index([bookId, remainingCents])
+}
+
+// 工资批次：人事提报 → 试算个税 → 财务确认 → 过账 → 银行付实发
+model PayrollBatch {
+  id                   String                      @id
+  bookId               String
+  book                 Book                        @relation(fields: [bookId], references: [id])
+  // YYYY-MM
+  period               String
+  taxPeriod            String
+  // draft | calculated | taxVerified | posted | paid
+  status               String                      @default("draft")
+  revision             Int                         @default(0)
+  lastMutationId       String?
+  grossCents           Int                         @default(0)
+  employeeSiCents      Int                         @default(0)
+  housingFundCents     Int                         @default(0)
+  otherDeductionCents  Int                         @default(0)
+  employerSiCents      Int                         @default(0)
+  employerHfCents      Int                         @default(0)
+  taxCents             Int                         @default(0)
+  netCents             Int                         @default(0)
+  paidCents            Int                         @default(0)
+  entryId              String?
+  lockedAt             DateTime?
+  lockedBy             String                      @default("")
+  remark               String                      @default("")
+  createdBy            String
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+  lines                PayrollLine[]
+  payments             PayrollPaymentAllocation[]
+
+  @@index([bookId, period])
+  @@index([bookId, status])
+}
+
+model PayrollLine {
+  id                 String       @id
+  batchId            String
+  batch              PayrollBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  personCode         String
+  personName         String
+  grossCents         Int
+  employeeSiCents    Int          @default(0)
+  housingFundCents   Int          @default(0)
+  otherDeductionCents Int         @default(0)
+  employerSiCents    Int          @default(0)
+  employerHfCents    Int          @default(0)
+  // 计算用的期初累计（分）
+  priorGrossCents    Int          @default(0)
+  priorSiCents       Int          @default(0)
+  priorHfCents       Int          @default(0)
+  priorTaxCents      Int          @default(0)
+  estimatedTaxCents  Int          @default(0)
+  confirmedTaxCents  Int          @default(0)
+  taxAdjustReason    String       @default("")
+  netCents           Int          @default(0)
+  sortOrder          Int          @default(0)
+
+  @@index([batchId])
+  @@index([personCode])
+}
+
+// 工资实发与银行流水的一次匹配
+model PayrollPaymentAllocation {
+  id                String        @id
+  batchId           String
+  batch             PayrollBatch  @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  statementId       String
+  statement         BankStatement @relation(fields: [statementId], references: [id])
+  cents             Int
+  entryId           String
+  mutationId        String
+  remark            String        @default("")
+  uploadedBy        String
+  createdAt         DateTime      @default(now())
+  reversedAt        DateTime?
+  reverseEntryId    String?
+  reverseMutationId String?
+  reverseRemark     String        @default("")
+
+  @@unique([batchId, mutationId])
+  @@index([statementId])
 }
 
 // 流水与报销单的一次匹配：借应付、贷银行；撤销后写红冲并标 reversedAt
