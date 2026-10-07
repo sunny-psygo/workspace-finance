@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { apiCall, hasRole, yuan } from "./api";
-import type { Claim, PanelProps } from "./types";
+import type { Claim, PanelProps, Statement } from "./types";
 
 export function ClaimsPanel({
   bookId,
@@ -26,10 +26,13 @@ export function ClaimsPanel({
   onClaimChange: (claim: Claim | null) => void;
   onFilterChange: (filter: string) => void | Promise<void>;
 }) {
+  const [showCreate, setShowCreate] = useState(false);
+
   async function selectClaim(id: string) {
     const payload = await apiCall<{ claim: Claim }>(`/api/claims/${id}`);
     onClaimChange(payload.claim);
     onNotice(`已选单据 ${payload.claim.status}`);
+    setShowCreate(false);
   }
 
   async function createClaim(event: FormEvent<HTMLFormElement>) {
@@ -67,6 +70,7 @@ export function ClaimsPanel({
     }
     onClaimChange(next);
     onNotice(`草稿已建并附票据：${next.id}`);
+    setShowCreate(false);
     await onLedgerChanged?.();
   }
 
@@ -84,29 +88,34 @@ export function ClaimsPanel({
   }
 
   return (
-    <>
-      <section className="mt-6 grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardTitle>待办单据（按当前角色）</CardTitle>
-          <ul className="mt-3 space-y-2 text-sm">
+    <section className="grid gap-4 md:grid-cols-[minmax(280px,0.95fr)_minmax(360px,1.25fr)]">
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle>单据列表</CardTitle>
+          <Button type="button" disabled={!bookId || !hasRole(roles, "employee")} onClick={() => setShowCreate(true)}>
+            新建报销
+          </Button>
+        </div>
+        <div className="mt-3 space-y-2">
+          <p className="text-xs font-bold text-stone-500">待办（按角色）</p>
+          <ul className="max-h-40 space-y-1 overflow-auto text-sm">
             {claims.length === 0 ? <li className="text-stone-500">暂无待办</li> : null}
             {claims.map((row) => (
-              <li key={row.id}>
+              <li key={`todo-${row.id}`}>
                 <button
                   type="button"
-                  className={`text-left underline ${claim?.id === row.id ? "text-stone-900" : "text-sky-700"}`}
+                  className={`w-full rounded px-2 py-2 text-left hover:bg-[var(--surface-soft)] ${
+                    claim?.id === row.id ? "bg-[var(--surface-soft)] font-semibold" : ""
+                  }`}
                   onClick={() => void selectClaim(row.id)}
                 >
-                  {row.status} · {yuan(row.paidCents || 0)}/{yuan(row.totalCents)} · {row.purpose} · {row.id.slice(0, 8)}
+                  {row.status} · {yuan(row.paidCents || 0)}/{yuan(row.totalCents)} · {row.purpose}
                 </button>
               </li>
             ))}
           </ul>
-        </Card>
-        <Card>
-          <CardTitle>全部单据</CardTitle>
           <select
-            className="mt-3 h-10 w-full rounded-md border border-stone-300 px-3 text-sm"
+            className="h-10 w-full rounded-lg border border-[var(--line)] px-3 text-sm"
             value={claimFilter}
             disabled={!bookId}
             onChange={(event) => void onFilterChange(event.target.value)}
@@ -120,13 +129,15 @@ export function ClaimsPanel({
             <option value="rejected">rejected</option>
             <option value="voided">voided</option>
           </select>
-          <ul className="mt-3 max-h-48 space-y-2 overflow-auto text-sm">
+          <ul className="max-h-64 space-y-1 overflow-auto text-sm">
             {allClaims.length === 0 ? <li className="text-stone-500">暂无单据</li> : null}
             {allClaims.map((row) => (
               <li key={row.id}>
                 <button
                   type="button"
-                  className={`text-left underline ${claim?.id === row.id ? "text-stone-900" : "text-sky-700"}`}
+                  className={`w-full rounded px-2 py-2 text-left hover:bg-[var(--surface-soft)] ${
+                    claim?.id === row.id ? "bg-[var(--surface-soft)] font-semibold" : ""
+                  }`}
                   onClick={() => void selectClaim(row.id)}
                 >
                   {row.status} · {row.applicant || ""} · {yuan(row.totalCents)} · {row.purpose}
@@ -134,13 +145,18 @@ export function ClaimsPanel({
               </li>
             ))}
           </ul>
-        </Card>
-      </section>
+        </div>
+      </Card>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-2">
-        <Card>
+      <Card>
+        {showCreate ? (
           <form onSubmit={createClaim}>
-            <CardTitle>报销草稿（员工）</CardTitle>
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle>新建报销草稿</CardTitle>
+              <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>
+                取消
+              </Button>
+            </div>
             <Input className="mt-3" name="department" placeholder="部门" defaultValue="行政" required disabled={!bookId} />
             <Input className="mt-2" name="costCenter" placeholder="费用归属" defaultValue="公司公共" required disabled={!bookId} />
             <Input className="mt-2" name="payeeName" placeholder="收款人" defaultValue="张三" required disabled={!bookId} />
@@ -159,85 +175,103 @@ export function ClaimsPanel({
               保存草稿并上传附件
             </Button>
           </form>
-        </Card>
-        <Card>
-          <CardTitle>审批</CardTitle>
-          <p className="mt-3 text-sm text-stone-600">
-            {claim
-              ? `当前 ${claim.status} · revision ${claim.revision} · 已付 ${yuan(claim.paidCents || 0)} / ${yuan(claim.totalCents)} 元`
-              : "先保存草稿"}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button
-              disabled={!claim || !hasRole(roles, "employee") || (claim.status !== "draft" && claim.status !== "rejected")}
-              onClick={() => void runAction("submit")}
-            >
-              提交财务
-            </Button>
-            <Button
-              disabled={!claim || !hasRole(roles, "finance") || claim.status !== "financeReview"}
-              onClick={() => void runAction("financeApprove", "票据齐全")}
-            >
-              财务通过
-            </Button>
-            <Button
-              disabled={!claim || !hasRole(roles, "gm") || claim.status !== "gmReview"}
-              onClick={() => void runAction("gmApprove", "同意")}
-            >
-              总经理通过并入账
-            </Button>
-            <Button
-              disabled={
-                !claim ||
-                !hasRole(roles, "finance", "gm") ||
-                (claim.status !== "financeReview" && claim.status !== "gmReview")
-              }
-              onClick={() => void runAction("reject", "资料不全")}
-            >
-              驳回
-            </Button>
-            <Button
-              disabled={!claim || !hasRole(roles, "gm") || claim.status !== "paymentVoucher" || (claim.paidCents || 0) > 0}
-              onClick={() => void runAction("void", "作废")}
-            >
-              作废并红冲
-            </Button>
-          </div>
-          {claim?.items?.[0]?.attachments?.length ? (
-            <p className="mt-3 text-sm">
-              明细附件：
-              {claim.items[0].attachments.map((a) => (
-                <a key={a.id} className="ml-2 text-sky-700 underline" href={`/api/attachments/${a.id}`} target="_blank" rel="noreferrer">
-                  {a.fileName}
-                </a>
-              ))}
+        ) : (
+          <>
+            <CardTitle>单据详情 / 审批</CardTitle>
+            <p className="mt-3 text-sm text-stone-600">
+              {claim
+                ? `当前 ${claim.status} · revision ${claim.revision} · 已付 ${yuan(claim.paidCents || 0)} / ${yuan(claim.totalCents)} 元`
+                : "左侧选择单据，或新建报销。"}
             </p>
-          ) : claim ? (
-            <p className="mt-3 text-sm text-amber-700">还没有明细附件，提交会被拒绝</p>
-          ) : null}
-          {claim?.entryId ? <p className="mt-1 text-sm">应付分录：{claim.entryId}</p> : null}
-          {claim?.paymentEntryId ? <p className="mt-1 text-sm">付款分录：{claim.paymentEntryId}</p> : null}
-        </Card>
-      </section>
-    </>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                disabled={!claim || !hasRole(roles, "employee") || (claim.status !== "draft" && claim.status !== "rejected")}
+                onClick={() => void runAction("submit")}
+              >
+                提交财务
+              </Button>
+              <Button
+                disabled={!claim || !hasRole(roles, "finance") || claim.status !== "financeReview"}
+                onClick={() => void runAction("financeApprove", "票据齐全")}
+              >
+                财务通过
+              </Button>
+              <Button
+                disabled={!claim || !hasRole(roles, "gm") || claim.status !== "gmReview"}
+                onClick={() => void runAction("gmApprove", "同意")}
+              >
+                总经理通过并入账
+              </Button>
+              <Button
+                disabled={
+                  !claim ||
+                  !hasRole(roles, "finance", "gm") ||
+                  (claim.status !== "financeReview" && claim.status !== "gmReview")
+                }
+                onClick={() => void runAction("reject", "资料不全")}
+              >
+                驳回
+              </Button>
+              <Button
+                disabled={!claim || !hasRole(roles, "gm") || claim.status !== "paymentVoucher" || (claim.paidCents || 0) > 0}
+                onClick={() => void runAction("void", "作废")}
+              >
+                作废并红冲
+              </Button>
+            </div>
+            {claim?.items?.[0]?.attachments?.length ? (
+              <p className="mt-3 text-sm">
+                明细附件：
+                {claim.items[0].attachments.map((a) => (
+                  <a key={a.id} className="ml-2 text-sky-700 underline" href={`/api/attachments/${a.id}`} target="_blank" rel="noreferrer">
+                    {a.fileName}
+                  </a>
+                ))}
+              </p>
+            ) : claim ? (
+              <p className="mt-3 text-sm text-amber-700">还没有明细附件，提交会被拒绝</p>
+            ) : null}
+            {claim?.entryId ? <p className="mt-1 text-sm">应付分录：{claim.entryId}</p> : null}
+            {claim?.paymentEntryId ? <p className="mt-1 text-sm">付款分录：{claim.paymentEntryId}</p> : null}
+          </>
+        )}
+      </Card>
+    </section>
   );
 }
 
-/** 出纳匹配付款；依赖当前选中的 claim。 */
+type PayableRow = {
+  id: string;
+  purpose: string;
+  payeeName: string;
+  totalCents: number;
+  paidCents: number;
+  unpaidCents: number;
+};
+
+/** 出纳匹配付款：本页可选待付款单据。 */
 export function ClaimPaymentPanel({
   bookId,
   roles,
   claim,
   statements,
+  payableClaims,
   onNotice,
   onClaimChange,
   onLedgerChanged,
 }: PanelProps & {
   claim: Claim | null;
-  statements: import("./types").Statement[];
-  onClaimChange: (claim: Claim) => void;
+  statements: Statement[];
+  payableClaims: PayableRow[];
+  onClaimChange: (claim: Claim | null) => void;
 }) {
   const [busy, setBusy] = useState(false);
+
+  async function pickPayable(id: string) {
+    const payload = await apiCall<{ claim: Claim }>(`/api/claims/${id}`);
+    onClaimChange(payload.claim);
+    onNotice(`已选待付款单据 ${payload.claim.purpose}`);
+  }
 
   async function importStatement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -307,68 +341,95 @@ export function ClaimPaymentPanel({
   }
 
   return (
-    <section className="mt-6 grid gap-4 md:grid-cols-2">
+    <section className="grid gap-4">
       <Card>
-        <form onSubmit={importStatement}>
-          <CardTitle>导入银行流水（出纳/财务）</CardTitle>
-          <Input className="mt-3" name="reference" placeholder="流水号" defaultValue="BANK20261004001" required disabled={!bookId} />
-          <Input className="mt-2" name="paidOn" type="date" required disabled={!bookId} />
-          <Input className="mt-2" name="amount" placeholder="支出金额（元）" defaultValue="128" required disabled={!bookId} />
-          <Input className="mt-2" name="bankAccountCode" defaultValue="1002" required disabled={!bookId} />
-          <Input className="mt-2" name="counterparty" placeholder="对方" defaultValue="张三" disabled={!bookId} />
-          <Input className="mt-2" name="remark" placeholder="摘要" defaultValue="报销付款" disabled={!bookId} />
-          <Button className="mt-3" disabled={!bookId || !hasRole(roles, "cashier", "finance")} type="submit">
-            导入
-          </Button>
-        </form>
-        <ul className="mt-3 space-y-1 text-sm text-stone-600">
-          {statements.map((row) => (
-            <li key={row.id} className="flex flex-wrap items-center gap-2">
-              <span>
-                {row.reference} · 剩余 {yuan(row.remainingCents)} / {yuan(row.cents)} · {row.id.slice(0, 8)}
-              </span>
-              {row.remainingCents === row.cents && hasRole(roles, "cashier", "finance") ? (
-                <Button type="button" onClick={() => void voidStatement(row.id, row.reference)}>
-                  作废
-                </Button>
-              ) : null}
+        <CardTitle>待付款单据</CardTitle>
+        <ul className="mt-3 max-h-40 space-y-1 overflow-auto text-sm">
+          {payableClaims.length === 0 ? <li className="text-stone-500">暂无待付款。</li> : null}
+          {payableClaims.map((row) => (
+            <li key={row.id}>
+              <button
+                type="button"
+                className={`w-full rounded px-2 py-2 text-left hover:bg-[var(--surface-soft)] ${
+                  claim?.id === row.id ? "bg-[var(--surface-soft)] font-semibold" : ""
+                }`}
+                onClick={() => void pickPayable(row.id)}
+              >
+                {row.purpose} · {row.payeeName} · 未付 {yuan(row.unpaidCents)} / {yuan(row.totalCents)}
+              </button>
             </li>
           ))}
         </ul>
       </Card>
-      <Card>
-        <form onSubmit={allocate}>
-          <CardTitle>匹配付款（出纳）</CardTitle>
-          <Input className="mt-3" name="statementId" placeholder="流水 id" required disabled={!claim} />
-          <Input className="mt-2" name="amount" placeholder="本次核销（元）" defaultValue="60" required disabled={!claim} />
-          <Input className="mt-2" name="voucherNo" placeholder="回单号（可空）" disabled={!claim} />
-          <Input className="mt-2" name="remark" placeholder="说明" defaultValue="匹配付款" disabled={!claim} />
-          <Input className="mt-2" name="fileName" placeholder="回单文件名" defaultValue="receipt.txt" disabled={!claim} />
-          <Input className="mt-2" name="fileText" placeholder="回单文本（演示）" defaultValue="payment-proof" disabled={!claim} />
-          <Button className="mt-3" disabled={!claim || busy || !hasRole(roles, "cashier") || claim.status !== "paymentVoucher"}>
-            匹配并核销
-          </Button>
-        </form>
-        {claim?.allocations?.length ? (
+
+      <section className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <form onSubmit={importStatement}>
+            <CardTitle>导入银行流水</CardTitle>
+            <Input className="mt-3" name="reference" placeholder="流水号" defaultValue="BANK20261004001" required disabled={!bookId} />
+            <Input className="mt-2" name="paidOn" type="date" required disabled={!bookId} />
+            <Input className="mt-2" name="amount" placeholder="支出金额（元）" defaultValue="128" required disabled={!bookId} />
+            <Input className="mt-2" name="bankAccountCode" defaultValue="1002" required disabled={!bookId} />
+            <Input className="mt-2" name="counterparty" placeholder="对方" defaultValue="张三" disabled={!bookId} />
+            <Input className="mt-2" name="remark" placeholder="摘要" defaultValue="报销付款" disabled={!bookId} />
+            <Button className="mt-3" disabled={!bookId || !hasRole(roles, "cashier", "finance")} type="submit">
+              导入
+            </Button>
+          </form>
           <ul className="mt-3 space-y-1 text-sm text-stone-600">
-            {claim.allocations.map((row) => (
+            {statements.map((row) => (
               <li key={row.id} className="flex flex-wrap items-center gap-2">
                 <span>
-                  {yuan(row.cents)} · {row.voucherNo || row.id.slice(0, 8)}
-                  {row.reversedAt ? " · 已撤销" : ""}
+                  {row.reference} · 剩余 {yuan(row.remainingCents)} / {yuan(row.cents)} · {row.id.slice(0, 8)}
                 </span>
-                {!row.reversedAt &&
-                hasRole(roles, "cashier") &&
-                (claim.status === "paymentVoucher" || claim.status === "completed") ? (
-                  <Button type="button" onClick={() => void reverse(row.id)}>
-                    撤销
+                {row.remainingCents === row.cents && hasRole(roles, "cashier", "finance") ? (
+                  <Button type="button" onClick={() => void voidStatement(row.id, row.reference)}>
+                    作废
                   </Button>
                 ) : null}
               </li>
             ))}
           </ul>
-        ) : null}
-      </Card>
+        </Card>
+        <Card>
+          <form onSubmit={allocate}>
+            <CardTitle>匹配付款</CardTitle>
+            <p className="mt-2 text-sm text-stone-500">
+              {claim
+                ? `当前单据：${claim.purpose} · 未付 ${yuan(claim.totalCents - (claim.paidCents || 0))}`
+                : "先在上方选择待付款单据"}
+            </p>
+            <Input className="mt-3" name="statementId" placeholder="流水 id" required disabled={!claim} />
+            <Input className="mt-2" name="amount" placeholder="本次核销（元）" defaultValue="60" required disabled={!claim} />
+            <Input className="mt-2" name="voucherNo" placeholder="回单号（可空）" disabled={!claim} />
+            <Input className="mt-2" name="remark" placeholder="说明" defaultValue="匹配付款" disabled={!claim} />
+            <Input className="mt-2" name="fileName" placeholder="回单文件名" defaultValue="receipt.txt" disabled={!claim} />
+            <Input className="mt-2" name="fileText" placeholder="回单文本（演示）" defaultValue="payment-proof" disabled={!claim} />
+            <Button className="mt-3" disabled={!claim || busy || !hasRole(roles, "cashier") || claim.status !== "paymentVoucher"}>
+              匹配并核销
+            </Button>
+          </form>
+          {claim?.allocations?.length ? (
+            <ul className="mt-3 space-y-1 text-sm text-stone-600">
+              {claim.allocations.map((row) => (
+                <li key={row.id} className="flex flex-wrap items-center gap-2">
+                  <span>
+                    {yuan(row.cents)} · {row.voucherNo || row.id.slice(0, 8)}
+                    {row.reversedAt ? " · 已撤销" : ""}
+                  </span>
+                  {!row.reversedAt &&
+                  hasRole(roles, "cashier") &&
+                  (claim.status === "paymentVoucher" || claim.status === "completed") ? (
+                    <Button type="button" onClick={() => void reverse(row.id)}>
+                      撤销
+                    </Button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Card>
+      </section>
     </section>
   );
 }

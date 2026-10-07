@@ -3,7 +3,9 @@ export type AppView =
   | "payment"
   | "payroll"
   | "fixedAssets"
+  | "bookSetup"
   | "periodClose"
+  | "journal"
   | "reports"
   | "archive"
   | "trialBalance"
@@ -37,6 +39,8 @@ export const navGroups: NavGroup[] = [
   {
     title: "账务处理",
     items: [
+      { view: "bookSetup", label: "账套与科目", roles: ["finance", "gm"] },
+      { view: "journal", label: "凭证查询", roles: ["finance", "gm"] },
       { view: "fixedAssets", label: "固定资产", roles: ["finance", "gm"] },
       { view: "periodClose", label: "期末结账", roles: ["finance", "gm"] },
       { view: "trialBalance", label: "科目余额表" },
@@ -55,7 +59,9 @@ export const viewTitles: Record<AppView, string> = {
   payment: "银行流水与付款",
   payroll: "工资批次",
   fixedAssets: "固定资产",
+  bookSetup: "账套与科目",
   periodClose: "期末结账",
+  journal: "凭证查询",
   reports: "会计报表",
   archive: "电子档案",
   trialBalance: "科目余额表",

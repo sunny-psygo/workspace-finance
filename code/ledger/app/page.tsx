@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArchivePanel } from "@/components/ledger/archive-panel";
-import { apiCall } from "@/components/ledger/api";
+import { apiCall, setApiNoticeHandler } from "@/components/ledger/api";
 import { AppShell, initialViewFor } from "@/components/ledger/app-shell";
 import { BankReconPanel } from "@/components/ledger/bank-recon-panel";
-import { BookPanel } from "@/components/ledger/book-panel";
+import { BookSetupPanel, PeriodClosePanel } from "@/components/ledger/book-panel";
 import { ClaimPaymentPanel, ClaimsPanel } from "@/components/ledger/claims-panel";
 import { FixedAssetsPanel } from "@/components/ledger/fixed-assets-panel";
+import { JournalPanel } from "@/components/ledger/journal-panel";
 import { LoginCard } from "@/components/ledger/login-card";
 import type { AppView } from "@/components/ledger/nav";
 import { PayrollPanel } from "@/components/ledger/payroll-panel";
@@ -41,6 +42,14 @@ export default function Page() {
   const [notice, setNotice] = useState("先登录。");
 
   const roles = user?.roles ?? [];
+
+  /** 待付款列表：优先用银行调节里的 openClaims，保证未付金额一致。 */
+  const payableClaims = useMemo(() => recon?.openClaims ?? [], [recon]);
+
+  useEffect(() => {
+    setApiNoticeHandler(setNotice);
+    return () => setApiNoticeHandler(null);
+  }, []);
 
   const refreshBooks = useCallback(async () => {
     const payload = await apiCall<{ books: Array<{ id: string; name: string }> }>("/api/books");
@@ -168,16 +177,17 @@ export default function Page() {
 
       {view === "payment" ? (
         <>
-          <BankReconPanel bookId={bookId} recon={recon} onRefresh={() => refreshRecon()} />
           <ClaimPaymentPanel
             bookId={bookId}
             roles={roles}
             claim={claim}
             statements={statements}
+            payableClaims={payableClaims}
             onNotice={setNotice}
             onClaimChange={setClaim}
             onLedgerChanged={refreshLedgerSurfaces}
           />
+          <BankReconPanel bookId={bookId} recon={recon} onRefresh={() => refreshRecon()} />
         </>
       ) : null}
 
@@ -199,8 +209,8 @@ export default function Page() {
         />
       ) : null}
 
-      {view === "periodClose" ? (
-        <BookPanel
+      {view === "bookSetup" ? (
+        <BookSetupPanel
           bookId={bookId}
           books={books}
           roles={roles}
@@ -211,8 +221,20 @@ export default function Page() {
           }}
           onSelectBook={selectBook}
           onRefreshBalance={() => refreshBalance()}
-          onRefreshClaims={() => refreshClaims()}
         />
+      ) : null}
+
+      {view === "periodClose" ? (
+        <PeriodClosePanel
+          bookId={bookId}
+          roles={roles}
+          onNotice={setNotice}
+          onRefreshBalance={() => refreshBalance()}
+        />
+      ) : null}
+
+      {view === "journal" ? (
+        <JournalPanel bookId={bookId} roles={roles} onNotice={setNotice} />
       ) : null}
 
       {view === "reports" ? (

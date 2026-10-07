@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent } from "react";
+import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { apiCall } from "./api";
@@ -11,14 +11,21 @@ export function LoginCard({
 }: {
   onLogin: (user: User) => void | Promise<void>;
 }) {
+  const [error, setError] = useState("");
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const payload = await apiCall<{ user: User }>("/api/auth/login", {
-      username: form.get("username"),
-      password: form.get("password"),
-    });
-    await onLogin(payload.user);
+    setError("");
+    try {
+      const form = new FormData(event.currentTarget);
+      const payload = await apiCall<{ user: User }>("/api/auth/login", {
+        username: form.get("username"),
+        password: form.get("password"),
+      });
+      await onLogin(payload.user);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "登录失败");
+    }
   }
 
   return (
@@ -45,6 +52,7 @@ export function LoginCard({
             required
           />
         </label>
+        {error ? <p className="login-help" style={{ color: "#b42318" }}>{error}</p> : null}
         <Button className="w-full" type="submit">
           登录
         </Button>
