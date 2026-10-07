@@ -111,6 +111,28 @@ type FixedAsset = {
   depreciations?: Array<{ yearMonth: string; cents: number }>;
 };
 
+type ReportLine = { key: string; label: string; cents: number; indent?: number };
+
+type BalanceSheet = {
+  asOf: string;
+  assets: ReportLine[];
+  liabilities: ReportLine[];
+  equity: ReportLine[];
+  assetTotalCents: number;
+  liabilityTotalCents: number;
+  equityTotalCents: number;
+  liabilityAndEquityTotalCents: number;
+  balanced: boolean;
+};
+
+type IncomeStatement = {
+  yearMonth: string;
+  lines: ReportLine[];
+  incomeTotalCents: number;
+  expenseTotalCents: number;
+  profitCents: number;
+};
+
 function yuan(cents: number) {
   return (cents / 100).toFixed(2);
 }
@@ -141,6 +163,8 @@ export default function Page() {
   const [payrollBatches, setPayrollBatches] = useState<PayrollBatch[]>([]);
   const [payroll, setPayroll] = useState<PayrollBatch | null>(null);
   const [fixedAssets, setFixedAssets] = useState<FixedAsset[]>([]);
+  const [balanceSheetReport, setBalanceSheetReport] = useState<BalanceSheet | null>(null);
+  const [incomeReport, setIncomeReport] = useState<IncomeStatement | null>(null);
   const [users, setUsers] = useState<Array<User & { active: boolean }>>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
@@ -620,6 +644,29 @@ export default function Page() {
     setNotice(`资产已处置：${payload.asset.code}`);
     await refreshFixedAssetsFor();
     await refreshBalance();
+  }
+
+  async function loadBalanceSheet() {
+    if (!bookId) return;
+    const payload = await call<{ report: BalanceSheet }>(`/api/books/${bookId}/reports/balance-sheet`);
+    setBalanceSheetReport(payload.report);
+    setNotice(
+      payload.report.balanced
+        ? `资产负债表已刷新（勾稽平衡）`
+        : `资产负债表不平衡：资产 ${yuan(payload.report.assetTotalCents)} ≠ 负债权益 ${yuan(payload.report.liabilityAndEquityTotalCents)}`,
+    );
+  }
+
+  async function loadIncomeStatement(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    const yearMonth = String(form.get("yearMonth") || "");
+    const payload = await call<{ report: IncomeStatement }>(
+      `/api/books/${bookId}/reports/income-statement?yearMonth=${encodeURIComponent(yearMonth)}`,
+    );
+    setIncomeReport(payload.report);
+    setNotice(`${yearMonth} 利润总额 ${yuan(payload.report.profitCents)}`);
   }
 
   async function refreshUsers() {
@@ -1201,6 +1248,82 @@ export default function Page() {
               <p className="mt-3 text-sm text-stone-500">
                 购置借 1601 / 贷 2241；折旧借 5602 / 贷 1602；应提未提会阻断该月结账。
               </p>
+            </Card>
+          </section>
+
+          <section className="mt-6 grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardTitle>资产负债表</CardTitle>
+              <Button className="mt-3" disabled={!bookId} onClick={loadBalanceSheet}>
+                刷新资产负债表
+              </Button>
+              {balanceSheetReport ? (
+                <div className="mt-3 space-y-2 text-sm">
+                  <p className={balanceSheetReport.balanced ? "text-emerald-700" : "text-red-700"}>
+                    {balanceSheetReport.balanced ? "勾稽平衡" : "勾稽不平衡"} · {balanceSheetReport.asOf}
+                  </p>
+                  <p className="font-medium">资产</p>
+                  <ul>
+                    {balanceSheetReport.assets.map((row) => (
+                      <li key={row.key} className="flex justify-between gap-2">
+                        <span>{row.label}</span>
+                        <span>{yuan(row.cents)}</span>
+                      </li>
+                    ))}
+                    <li className="flex justify-between border-t pt-1 font-medium">
+                      <span>资产合计</span>
+                      <span>{yuan(balanceSheetReport.assetTotalCents)}</span>
+                    </li>
+                  </ul>
+                  <p className="font-medium">负债</p>
+                  <ul>
+                    {balanceSheetReport.liabilities.map((row) => (
+                      <li key={row.key} className="flex justify-between gap-2">
+                        <span>{row.label}</span>
+                        <span>{yuan(row.cents)}</span>
+                      </li>
+                    ))}
+                    <li className="flex justify-between border-t pt-1 font-medium">
+                      <span>负债合计</span>
+                      <span>{yuan(balanceSheetReport.liabilityTotalCents)}</span>
+                    </li>
+                  </ul>
+                  <p className="font-medium">所有者权益</p>
+                  <ul>
+                    {balanceSheetReport.equity.map((row) => (
+                      <li key={row.key} className="flex justify-between gap-2">
+                        <span>{row.label}</span>
+                        <span>{yuan(row.cents)}</span>
+                      </li>
+                    ))}
+                    <li className="flex justify-between border-t pt-1 font-medium">
+                      <span>负债和权益合计</span>
+                      <span>{yuan(balanceSheetReport.liabilityAndEquityTotalCents)}</span>
+                    </li>
+                  </ul>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-stone-500">点刷新从试算派生。</p>
+              )}
+            </Card>
+            <Card>
+              <CardTitle>利润表</CardTitle>
+              <form className="mt-3 space-y-2" onSubmit={loadIncomeStatement}>
+                <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-02" required disabled={!bookId} />
+                <Button disabled={!bookId}>刷新利润表</Button>
+              </form>
+              {incomeReport ? (
+                <ul className="mt-3 space-y-1 text-sm">
+                  {incomeReport.lines.map((row) => (
+                    <li key={row.key} className={`flex justify-between gap-2 ${row.indent ? "" : "font-medium"}`}>
+                      <span>{row.label}</span>
+                      <span>{yuan(row.cents)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-sm text-stone-500">选期间后刷新；口径与结账相同。</p>
+              )}
             </Card>
           </section>
 

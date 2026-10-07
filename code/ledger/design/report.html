@@ -16,20 +16,20 @@
 <h1>新财务系统重建</h1>
 
 <h2>上次以来</h2>
-<p>R1 固定资产最小闭环已落地：建卡（1601/2241）、次月直线折旧（5602/1602）、处置当月先提后处置、结账守卫 <code>PERIOD_HAS_OPEN_DEPRECIATION</code>。领域库、API、单测、页面卡片齐。</p>
+<p>R2 报表派生已落地：<code>GET .../reports/balance-sheet</code> 与 <code>.../income-statement?yearMonth=</code>；固定资产分列原价/累计折旧/净值；未结转损益并入权益。</p>
 
 <h2>需要你</h2>
-<p>没有待决定的事。下一步按路线图做 R2 报表派生。</p>
+<p>没有待决定的事。下一步 R3 电子档案主卷。</p>
 
 <h2>现状</h2>
-<p>总设计见 <code>rebuild-roadmap.md</code>。已可用：报销 → 付款 → 工资 → 固定资产 → 月结/年结。页面 <code>http://127.0.0.1:3210</code>。</p>
+<p>总设计见 <code>rebuild-roadmap.md</code>。已可用：报销 → 付款 → 工资 → 固定资产 → 月结/年结 → 报表。页面 <code>http://127.0.0.1:3210</code>。</p>
 
 <h2>积木进度</h2>
 <table>
   <tr><th>ID</th><th>积木</th><th>状态</th></tr>
   <tr><td>R0</td><td>总设计与活页</td><td>完成</td></tr>
   <tr><td>R1</td><td>固定资产</td><td>完成</td></tr>
-  <tr><td>R2</td><td>资产负债/利润表</td><td>待做</td></tr>
+  <tr><td>R2</td><td>资产负债/利润表</td><td>完成</td></tr>
   <tr><td>R3</td><td>电子档案主卷</td><td>待做</td></tr>
   <tr><td>R4</td><td>统一结账清单</td><td>待做</td></tr>
 </table>

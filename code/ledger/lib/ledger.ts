@@ -89,8 +89,8 @@ function lastDayOfMonth(yearMonth: string) {
   return `${yearMonth}-${String(day).padStart(2, "0")}`;
 }
 
-/** 该月收入/费用业务发生额（排除结转/年结系统分录）。 */
-async function monthPlMovements(bookId: string, yearMonth: string, client: DbClient = db) {
+/** 该月收入/费用业务发生额（排除结转/年结系统分录）。报表与结账共用。 */
+export async function monthPlMovements(bookId: string, yearMonth: string, client: DbClient = db) {
   const accounts = await client.account.findMany({
     where: { bookId, kind: { in: ["income", "expense"] } },
     include: {

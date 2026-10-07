@@ -26,6 +26,7 @@
 | 税局个税导入与期初累计 | `design/payroll-tax-import.md` |
 | 工资/税局 CSV 解析 | `design/payroll-csv.md` |
 | 固定资产建卡/折旧/处置 | `design/fixed-assets.md` |
+| 资产负债/利润表派生 | `design/reports.md` |
 | 全流程重建总图 | `design/rebuild-roadmap.md` |
 
 ## 本地

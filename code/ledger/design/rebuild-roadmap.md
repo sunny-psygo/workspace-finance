@@ -80,7 +80,7 @@ flowchart TB
 | 报销/附件/发票/付款 | claim/payment | GM 过账 / 出纳匹配 | 既有 |
 | 工资/税局/期初/CSV | payroll | 计提与付实发 | 既有 |
 | **固定资产** | fixed-asset | 购置/折旧/处置 | `fixed-assets.md` |
-| 报表派生 | reports | 只读 | `reports.md`（待写） |
+| **报表派生** | reports | 只读 | `reports.md` |
 | 电子档案主卷 | archive | 只读归集 | `electronic-archive.md`（待写） |
 
 ## 5. 接口稳定性原则
