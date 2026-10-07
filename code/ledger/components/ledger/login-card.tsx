@@ -2,7 +2,6 @@
 
 import { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { apiCall } from "./api";
 import type { User } from "./types";
@@ -23,18 +22,34 @@ export function LoginCard({
   }
 
   return (
-    <Card className="max-w-md">
-      <form onSubmit={submit}>
-        <CardTitle>登录</CardTitle>
-        <Input className="mt-3" name="username" placeholder="用户名" required />
-        <Input className="mt-2" name="password" type="password" placeholder="密码" required />
-        <Button className="mt-3" type="submit">
+    <section className="login-screen">
+      <form className="login-card" onSubmit={submit}>
+        <div className="login-brand">
+          <img src="/koala-logo.svg" alt="创意考拉" />
+          <div>
+            <div className="login-brand-name">创意考拉</div>
+            <div className="login-system-title">公司内部无纸化报销系统</div>
+          </div>
+        </div>
+        <label>
+          登录账号
+          <Input name="username" autoComplete="username" placeholder="请输入登录账号" required />
+        </label>
+        <label>
+          登录密码
+          <Input
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="请输入密码"
+            required
+          />
+        </label>
+        <Button className="w-full" type="submit">
           登录
         </Button>
+        <p className="login-help">演示账号：zhangsan / hr / finance / gm / cashier，密码均为 Passw0rd!</p>
       </form>
-      <p className="mt-4 text-sm text-stone-500">
-        演示：zhangsan / hr / finance / gm / cashier，密码均为 Passw0rd!
-      </p>
-    </Card>
+    </section>
   );
 }
