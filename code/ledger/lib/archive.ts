@@ -37,6 +37,18 @@ export type ArchiveCase = {
   attachments: ArchiveAttachment[];
 };
 
+type EntryRow = {
+  id: string;
+  occurredOn: string;
+  memo: string;
+  reference: string | null;
+  postings: Array<{
+    side: string;
+    cents: number;
+    account: { code: string; name: string };
+  }>;
+};
+
 function periodOf(occurredOn: string) {
   return occurredOn.slice(0, 7);
 }
@@ -52,26 +64,57 @@ function contentHash(input: {
   reference: string | null;
   lines: Array<{ accountCode: string; side: string; cents: number }>;
 }) {
-  const payload = JSON.stringify({
-    occurredOn: input.occurredOn,
-    memo: input.memo,
-    reference: input.reference,
-    lines: input.lines,
-  });
-  return createHash("sha256").update(payload).digest("hex");
+  return createHash("sha256").update(JSON.stringify(input)).digest("hex");
 }
 
-async function enrichEntry(entry: {
-  id: string;
-  occurredOn: string;
-  memo: string;
-  reference: string | null;
-  postings: Array<{
-    side: string;
-    cents: number;
-    account: { code: string; name: string };
-  }>;
-}): Promise<ArchiveCase> {
+function pushUnique<T extends { type?: string; id: string }>(
+  list: T[],
+  item: T,
+  keyOf: (row: T) => string = (row) => `${row.type ?? ""}:${row.id}`,
+) {
+  if (!list.some((row) => keyOf(row) === keyOf(item))) list.push(item);
+}
+
+/** 一次批量加载业务引用，避免按 Entry 循环查询。 */
+async function loadSideData(entryIds: string[]) {
+  if (!entryIds.length) {
+    return {
+      claims: [] as Awaited<ReturnType<typeof db.claim.findMany>>,
+      payrollBatches: [] as Awaited<ReturnType<typeof db.payrollBatch.findMany>>,
+      payrollPays: [] as Awaited<ReturnType<typeof db.payrollPaymentAllocation.findMany>>,
+      assets: [] as Awaited<ReturnType<typeof db.fixedAsset.findMany>>,
+      deps: [] as Awaited<ReturnType<typeof db.fixedAssetDepreciation.findMany>>,
+    };
+  }
+
+  const [claims, payrollBatches, payrollPays, assets, deps] = await Promise.all([
+    db.claim.findMany({
+      where: { OR: [{ entryId: { in: entryIds } }, { paymentEntryId: { in: entryIds } }] },
+      include: {
+        items: { include: { attachments: true } },
+        allocations: true,
+      },
+    }),
+    db.payrollBatch.findMany({ where: { entryId: { in: entryIds } } }),
+    db.payrollPaymentAllocation.findMany({
+      where: { OR: [{ entryId: { in: entryIds } }, { reverseEntryId: { in: entryIds } }] },
+    }),
+    db.fixedAsset.findMany({
+      where: { OR: [{ acquisitionEntryId: { in: entryIds } }, { disposeEntryId: { in: entryIds } }] },
+    }),
+    db.fixedAssetDepreciation.findMany({
+      where: { entryId: { in: entryIds } },
+      include: { asset: true },
+    }),
+  ]);
+
+  return { claims, payrollBatches, payrollPays, assets, deps };
+}
+
+function enrichEntry(
+  entry: EntryRow,
+  side: Awaited<ReturnType<typeof loadSideData>>,
+): ArchiveCase {
   const period = periodOf(entry.occurredOn);
   const lines = entry.postings.map((line) => ({
     accountCode: line.account.code,
@@ -85,105 +128,90 @@ async function enrichEntry(entry: {
   const references: ArchiveReference[] = [];
   const attachments: ArchiveAttachment[] = [];
 
-  const claims = await db.claim.findMany({
-    where: {
-      OR: [{ entryId: entry.id }, { paymentEntryId: entry.id }],
-    },
-    include: {
-      items: { include: { attachments: true } },
-      allocations: true,
-    },
-  });
-  for (const claim of claims) {
-    references.push({
+  for (const claim of side.claims) {
+    if (claim.entryId !== entry.id && claim.paymentEntryId !== entry.id) continue;
+    pushUnique(references, {
       type: "claim",
       id: claim.id,
       label: `${claim.purpose}（${claim.status}）`,
     });
     for (const item of claim.items) {
       if (item.invoiceNo) {
-        references.push({ type: "invoice", id: item.invoiceNo, label: item.invoiceNo });
+        pushUnique(references, { type: "invoice", id: item.invoiceNo, label: item.invoiceNo });
       }
       for (const file of item.attachments) {
-        attachments.push({
-          id: file.id,
-          documentType: "claimAttachment",
-          fileName: file.fileName,
-          contentType: file.contentType,
-          byteSize: file.byteSize,
-          storagePath: file.storagePath,
-        });
+        pushUnique(
+          attachments,
+          {
+            id: file.id,
+            documentType: "claimAttachment",
+            fileName: file.fileName,
+            contentType: file.contentType,
+            byteSize: file.byteSize,
+            storagePath: file.storagePath,
+          },
+          (row) => row.id,
+        );
       }
     }
     for (const alloc of claim.allocations) {
-      if (alloc.entryId === entry.id || alloc.reverseEntryId === entry.id) {
-        if (alloc.voucherNo) {
-          references.push({ type: "paymentVoucher", id: alloc.voucherNo, label: alloc.voucherNo });
-        }
-        if (alloc.storagePath && alloc.fileName) {
-          attachments.push({
+      if (alloc.entryId !== entry.id && alloc.reverseEntryId !== entry.id) continue;
+      if (alloc.voucherNo) {
+        pushUnique(references, {
+          type: "paymentVoucher",
+          id: alloc.voucherNo,
+          label: alloc.voucherNo,
+        });
+      }
+      if (alloc.storagePath && alloc.fileName) {
+        pushUnique(
+          attachments,
+          {
             id: alloc.id,
             documentType: "paymentVoucher",
             fileName: alloc.fileName,
             contentType: "application/octet-stream",
             byteSize: 0,
             storagePath: alloc.storagePath,
-          });
-        }
+          },
+          (row) => row.id,
+        );
       }
     }
   }
 
-  const payrollBatches = await db.payrollBatch.findMany({
-    where: { entryId: entry.id },
-  });
-  for (const batch of payrollBatches) {
-    references.push({
+  for (const batch of side.payrollBatches) {
+    if (batch.entryId !== entry.id) continue;
+    pushUnique(references, {
       type: "payrollBatch",
       id: batch.id,
       label: `工资 ${batch.period}`,
     });
   }
-  const payrollPays = await db.payrollPaymentAllocation.findMany({
-    where: { OR: [{ entryId: entry.id }, { reverseEntryId: entry.id }] },
-  });
-  for (const pay of payrollPays) {
-    references.push({
+  for (const pay of side.payrollPays) {
+    if (pay.entryId !== entry.id && pay.reverseEntryId !== entry.id) continue;
+    pushUnique(references, {
       type: "payrollPayment",
       id: pay.id,
       label: `工资付款 ${pay.cents}分`,
     });
   }
-
-  const assets = await db.fixedAsset.findMany({
-    where: {
-      OR: [{ acquisitionEntryId: entry.id }, { disposeEntryId: entry.id }],
-    },
-  });
-  for (const asset of assets) {
-    references.push({
+  for (const asset of side.assets) {
+    if (asset.acquisitionEntryId !== entry.id && asset.disposeEntryId !== entry.id) continue;
+    pushUnique(references, {
       type: "fixedAsset",
       id: asset.id,
       label: `${asset.code} ${asset.name}`,
     });
   }
-  const deps = await db.fixedAssetDepreciation.findMany({
-    where: { entryId: entry.id },
-    include: { asset: true },
-  });
-  for (const dep of deps) {
-    references.push({
+  for (const dep of side.deps) {
+    if (dep.entryId !== entry.id) continue;
+    pushUnique(references, {
       type: "fixedAssetDepreciation",
       id: dep.id,
       label: `${dep.asset.code} ${dep.yearMonth} 折旧`,
     });
   }
-
-  // 去重引用
-  const uniqRefs = Array.from(
-    new Map(references.map((row) => [`${row.type}:${row.id}`, row])).values(),
-  );
-  const uniqAtt = Array.from(new Map(attachments.map((row) => [row.id, row])).values());
 
   return {
     id: displayNumber(period, entry.reference, entry.id),
@@ -202,8 +230,8 @@ async function enrichEntry(entry: {
       lines: lines.map((l) => ({ accountCode: l.accountCode, side: l.side, cents: l.cents })),
     }),
     lines,
-    references: uniqRefs,
-    attachments: uniqAtt,
+    references,
+    attachments,
   };
 }
 
@@ -231,10 +259,8 @@ export async function listArchiveCases(
     take: 200,
   });
 
-  const cases = [];
-  for (const entry of entries) {
-    cases.push(await enrichEntry(entry));
-  }
+  const side = await loadSideData(entries.map((row) => row.id));
+  const cases = entries.map((entry) => enrichEntry(entry, side));
 
   const keyword = (query.keyword || "").trim().toLowerCase();
   if (!keyword) return cases;
@@ -261,5 +287,6 @@ export async function getArchiveCase(bookId: string, entryId: string) {
     },
   });
   if (!entry) return null;
-  return enrichEntry(entry);
+  const side = await loadSideData([entry.id]);
+  return enrichEntry(entry, side);
 }
