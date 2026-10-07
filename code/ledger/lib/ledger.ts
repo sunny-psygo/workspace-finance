@@ -190,6 +190,20 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     );
   }
 
+  const { listAssetsDueForDepreciation } = await import("./fixed-asset");
+  const dueAssets = await listAssetsDueForDepreciation(bookId, yearMonth);
+  if (dueAssets.length) {
+    const detail = dueAssets
+      .slice(0, 20)
+      .map((row) => `${row.code}:${row.name}`)
+      .join("、");
+    throw new LedgerError(
+      `期间 ${yearMonth} 仍有应提未提折旧：${detail}。`,
+      "PERIOD_HAS_OPEN_DEPRECIATION",
+      "先计提固定资产折旧，再结账。",
+    );
+  }
+
   await ensureDefaultAccounts(bookId);
 
   return db.$transaction(async (tx) => {
@@ -323,6 +337,8 @@ export async function reopenPeriod(bookId: string, yearMonth: string, remark: st
 
 const defaultAccounts: AccountInput[] = [
   { code: "1002", name: "银行存款", kind: "asset" },
+  { code: "1601", name: "固定资产", kind: "asset" },
+  { code: "1602", name: "累计折旧", kind: "asset" },
   { code: "2211", name: "应付职工薪酬", kind: "liability" },
   { code: "2221", name: "应交税费", kind: "liability" },
   { code: "2241", name: "其他应付款", kind: "liability" },

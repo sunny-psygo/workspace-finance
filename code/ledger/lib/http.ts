@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AuthError } from "./auth";
 import { ClaimError } from "./claim";
+import { FixedAssetError } from "./fixed-asset";
 import { LedgerError } from "./ledger";
 import { PayrollError } from "./payroll";
 import { PayrollCsvError } from "./payroll-csv";
@@ -21,14 +22,17 @@ export function fail(error: unknown) {
     error instanceof LedgerError ||
     error instanceof ClaimError ||
     error instanceof PayrollError ||
-    error instanceof PayrollCsvError
+    error instanceof PayrollCsvError ||
+    error instanceof FixedAssetError
   ) {
     const status =
       error.code === "CLAIM_REVISION_CONFLICT" ||
       error.code === "CLAIM_STATUS_CHANGED" ||
       error.code === "PAYROLL_REVISION_CONFLICT"
         ? 409
-        : error.code === "CLAIM_FORBIDDEN" || error.code === "PAYROLL_FORBIDDEN"
+        : error.code === "CLAIM_FORBIDDEN" ||
+            error.code === "PAYROLL_FORBIDDEN" ||
+            error.code === "ASSET_FORBIDDEN"
           ? 403
           : 400;
     return NextResponse.json(

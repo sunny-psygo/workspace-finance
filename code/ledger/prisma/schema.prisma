@@ -46,6 +46,7 @@ model Book {
   yearCloses       YearClose[]
   payrollBatches   PayrollBatch[]
   payrollOpenings  PayrollOpeningTax[]
+  fixedAssets      FixedAsset[]
 }
 
 model AccountingPeriod {
@@ -285,6 +286,49 @@ model PayrollLine {
 
   @@index([batchId])
   @@index([personCode])
+}
+
+// 固定资产卡片：购置入账 → 次月起直线折旧 → 处置；折旧与处置只走 postEntry
+model FixedAsset {
+  id                  String                   @id
+  bookId              String
+  book                Book                     @relation(fields: [bookId], references: [id])
+  code                String
+  name                String
+  // 启用日 YYYY-MM-DD；次月起提
+  startOn             String
+  costCents           Int
+  // 残值率 0–100
+  residualRatePercent Int                      @default(5)
+  usefulMonths        Int
+  // active | disposed
+  status              String                   @default("active")
+  accumDepCents       Int                      @default(0)
+  acquisitionEntryId  String
+  disposedAt          DateTime?
+  disposeEntryId      String?
+  disposeRemark       String                   @default("")
+  createdBy           String
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  depreciations       FixedAssetDepreciation[]
+
+  @@unique([bookId, code])
+  @@index([bookId, status])
+}
+
+model FixedAssetDepreciation {
+  id        String     @id
+  assetId   String
+  asset     FixedAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  // YYYY-MM
+  yearMonth String
+  cents     Int
+  entryId   String
+  createdAt DateTime   @default(now())
+
+  @@unique([assetId, yearMonth])
+  @@index([yearMonth])
 }
 
 // 某年某人的个税累计起点（中途上线或跨系统接续）；与已过账批次相加

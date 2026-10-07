@@ -5,7 +5,7 @@
   "scripts": {
     "db": "tsx scripts/postgres.ts",
     "seed": "tsx scripts/seed.ts",
-    "test": "prisma db push --skip-generate && tsx lib/ledger.test.ts && tsx lib/auth.test.ts && tsx lib/claim.test.ts && tsx lib/payroll.test.ts",
+    "test": "prisma db push --skip-generate && tsx lib/ledger.test.ts && tsx lib/auth.test.ts && tsx lib/claim.test.ts && tsx lib/payroll.test.ts && tsx lib/fixed-asset.test.ts",
     "dev": "next dev --port 3210"
   },
   "keywords": [],

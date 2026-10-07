@@ -98,6 +98,19 @@ type PayrollBatch = {
   }>;
 };
 
+type FixedAsset = {
+  id: string;
+  code: string;
+  name: string;
+  startOn: string;
+  costCents: number;
+  residualRatePercent: number;
+  usefulMonths: number;
+  status: string;
+  accumDepCents: number;
+  depreciations?: Array<{ yearMonth: string; cents: number }>;
+};
+
 function yuan(cents: number) {
   return (cents / 100).toFixed(2);
 }
@@ -127,6 +140,7 @@ export default function Page() {
   const [recon, setRecon] = useState<BankRecon | null>(null);
   const [payrollBatches, setPayrollBatches] = useState<PayrollBatch[]>([]);
   const [payroll, setPayroll] = useState<PayrollBatch | null>(null);
+  const [fixedAssets, setFixedAssets] = useState<FixedAsset[]>([]);
   const [users, setUsers] = useState<Array<User & { active: boolean }>>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
@@ -193,6 +207,12 @@ export default function Page() {
     setPayrollBatches(payload.batches);
   }
 
+  async function refreshFixedAssetsFor(id = bookId) {
+    if (!id) return;
+    const payload = await call<{ assets: FixedAsset[] }>(`/api/books/${id}/fixed-assets`);
+    setFixedAssets(payload.assets);
+  }
+
   async function selectBook(id: string) {
     setBookId(id);
     setClaim(null);
@@ -203,6 +223,7 @@ export default function Page() {
     await refreshStatementsFor(id);
     await refreshReconFor(id);
     await refreshPayrollFor(id);
+    await refreshFixedAssetsFor(id);
   }
 
   async function refreshReconFor(id = bookId) {
@@ -549,6 +570,56 @@ export default function Page() {
     await refreshBalance();
     await refreshStatements();
     await refreshPayrollFor();
+  }
+
+  async function createFixedAssetCard(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    const payload = await call<{ asset: FixedAsset }>(`/api/books/${bookId}/fixed-assets`, {
+      code: form.get("code"),
+      name: form.get("name"),
+      startOn: form.get("startOn"),
+      costCents: Math.round(Number(form.get("costYuan") || 0) * 100),
+      residualRatePercent: Number(form.get("residualRatePercent") || 5),
+      usefulMonths: Number(form.get("usefulMonths") || 12),
+      mutationId: `fa-create-ui-${Date.now()}`,
+      remark: form.get("remark") || "",
+    });
+    setNotice(`资产已建卡：${payload.asset.code} ${payload.asset.name}`);
+    await refreshFixedAssetsFor();
+    await refreshBalance();
+  }
+
+  async function depreciateFixedAssets(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    const yearMonth = String(form.get("yearMonth") || "");
+    const payload = await call<{ yearMonth: string; depreciated: FixedAsset[] }>(
+      `/api/books/${bookId}/fixed-assets/depreciate`,
+      {
+        yearMonth,
+        mutationId: `fa-dep-ui-${Date.now()}`,
+      },
+    );
+    setNotice(`${payload.yearMonth} 已计提 ${payload.depreciated.length} 项资产`);
+    await refreshFixedAssetsFor();
+    await refreshBalance();
+  }
+
+  async function disposeFixedAssetCard(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const assetId = String(form.get("assetId") || "");
+    const payload = await call<{ asset: FixedAsset }>(`/api/fixed-assets/${assetId}/dispose`, {
+      occurredOn: form.get("occurredOn"),
+      mutationId: `fa-dispose-ui-${Date.now()}`,
+      remark: form.get("remark") || "处置",
+    });
+    setNotice(`资产已处置：${payload.asset.code}`);
+    await refreshFixedAssetsFor();
+    await refreshBalance();
   }
 
   async function refreshUsers() {
@@ -1072,6 +1143,64 @@ export default function Page() {
                   保存期初
                 </Button>
               </form>
+            </Card>
+          </section>
+
+          <section className="mt-6 grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardTitle>固定资产</CardTitle>
+              <form className="mt-3 space-y-2" onSubmit={createFixedAssetCard}>
+                <Input name="code" placeholder="资产编号" defaultValue="FA-001" required disabled={!bookId} />
+                <Input name="name" placeholder="资产名称" defaultValue="办公电脑" required disabled={!bookId} />
+                <Input name="startOn" placeholder="启用日 YYYY-MM-DD" defaultValue="2026-01-10" required disabled={!bookId} />
+                <Input name="costYuan" placeholder="原值（元）" defaultValue="1200" required disabled={!bookId} />
+                <Input name="residualRatePercent" placeholder="残值率 %" defaultValue="5" disabled={!bookId} />
+                <Input name="usefulMonths" placeholder="使用月数" defaultValue="12" disabled={!bookId} />
+                <Input name="remark" placeholder="备注" defaultValue="购置" disabled={!bookId} />
+                <Button disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>建卡入账</Button>
+              </form>
+              <form className="mt-4 space-y-2 border-t border-stone-200 pt-3" onSubmit={depreciateFixedAssets}>
+                <p className="text-sm font-medium">月折旧（次月起提）</p>
+                <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-02" required disabled={!bookId} />
+                <Button disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>计提本月应提</Button>
+              </form>
+              <ul className="mt-4 max-h-48 space-y-1 overflow-auto text-sm">
+                {fixedAssets.length === 0 ? <li className="text-stone-500">暂无资产卡片</li> : null}
+                {fixedAssets.map((row) => (
+                  <li key={row.id}>
+                    {row.code} · {row.name} · {row.status} · 原值 {yuan(row.costCents)} · 累计折旧 {yuan(row.accumDepCents)} · 已提{" "}
+                    {row.depreciations?.length ?? 0}/{row.usefulMonths} 期
+                  </li>
+                ))}
+              </ul>
+            </Card>
+            <Card>
+              <CardTitle>资产处置</CardTitle>
+              <form className="mt-3 space-y-2" onSubmit={disposeFixedAssetCard}>
+                <select
+                  className="h-10 w-full rounded-md border border-stone-300 px-3 text-sm"
+                  name="assetId"
+                  disabled={!bookId || fixedAssets.filter((row) => row.status === "active").length === 0}
+                  defaultValue=""
+                >
+                  <option value="" disabled>
+                    选择在用资产
+                  </option>
+                  {fixedAssets
+                    .filter((row) => row.status === "active")
+                    .map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {row.code} · {row.name}
+                      </option>
+                    ))}
+                </select>
+                <Input name="occurredOn" placeholder="处置日 YYYY-MM-DD" defaultValue="2026-03-20" required disabled={!bookId} />
+                <Input name="remark" placeholder="处置说明" defaultValue="报废" required disabled={!bookId} />
+                <Button disabled={!bookId || (!roles.includes("finance") && !roles.includes("gm"))}>处置（当月先提后处置）</Button>
+              </form>
+              <p className="mt-3 text-sm text-stone-500">
+                购置借 1601 / 贷 2241；折旧借 5602 / 贷 1602；应提未提会阻断该月结账。
+              </p>
             </Card>
           </section>
 

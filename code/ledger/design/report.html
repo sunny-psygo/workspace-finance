@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>财务重建 · 活页报告</title>
+<style>
+  body { max-width: 760px; margin: 40px auto; font: 16px/1.6 "Source Han Sans SC", sans-serif; color: #1c1917; }
+  h1 { font-size: 28px; }
+  h2 { font-size: 20px; margin-top: 1.6em; }
+  code { background: #f5f5f4; padding: 1px 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+  th, td { border: 1px solid #d6d3d1; padding: 6px 8px; text-align: left; font-size: 14px; }
+  th { background: #f5f5f4; }
+</style>
+<body>
+<p>更新方式：能力变了，就改这一页的顶部三节，和代码放在同一次提交。</p>
+<h1>新财务系统重建</h1>
+
+<h2>上次以来</h2>
+<p>R1 固定资产最小闭环已落地：建卡（1601/2241）、次月直线折旧（5602/1602）、处置当月先提后处置、结账守卫 <code>PERIOD_HAS_OPEN_DEPRECIATION</code>。领域库、API、单测、页面卡片齐。</p>
+
+<h2>需要你</h2>
+<p>没有待决定的事。下一步按路线图做 R2 报表派生。</p>
+
+<h2>现状</h2>
+<p>总设计见 <code>rebuild-roadmap.md</code>。已可用：报销 → 付款 → 工资 → 固定资产 → 月结/年结。页面 <code>http://127.0.0.1:3210</code>。</p>
+
+<h2>积木进度</h2>
+<table>
+  <tr><th>ID</th><th>积木</th><th>状态</th></tr>
+  <tr><td>R0</td><td>总设计与活页</td><td>完成</td></tr>
+  <tr><td>R1</td><td>固定资产</td><td>完成</td></tr>
+  <tr><td>R2</td><td>资产负债/利润表</td><td>待做</td></tr>
+  <tr><td>R3</td><td>电子档案主卷</td><td>待做</td></tr>
+  <tr><td>R4</td><td>统一结账清单</td><td>待做</td></tr>
+</table>
+
+<h2>怎么自己试固定资产</h2>
+<ol>
+  <li>finance / Passw0rd! 登录，开新账或选账套。</li>
+  <li>建卡：编号 FA-001，启用 2026-01-10，原值 1200，残值 5%，12 期。</li>
+  <li>一月可结账；二月先「计提本月应提」再结账。</li>
+  <li>试算：1601=1200，1602 贷方累计折旧，5602 见折旧费用。</li>
+</ol>
+</body>
