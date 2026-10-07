@@ -133,6 +133,28 @@ type IncomeStatement = {
   profitCents: number;
 };
 
+type ArchiveCase = {
+  id: string;
+  entryId: string;
+  period: string;
+  displayNumber: string;
+  reference: string | null;
+  occurredOn: string;
+  memo: string;
+  debitCents: number;
+  creditCents: number;
+  contentHash: string;
+  references: Array<{ type: string; id: string; label: string }>;
+  attachments: Array<{ id: string; documentType: string; fileName: string }>;
+};
+
+type CloseChecklist = {
+  yearMonth: string;
+  closed: boolean;
+  ready: boolean;
+  gaps: Array<{ code: string; count: number; samples: string[]; next: string }>;
+};
+
 function yuan(cents: number) {
   return (cents / 100).toFixed(2);
 }
@@ -165,6 +187,8 @@ export default function Page() {
   const [fixedAssets, setFixedAssets] = useState<FixedAsset[]>([]);
   const [balanceSheetReport, setBalanceSheetReport] = useState<BalanceSheet | null>(null);
   const [incomeReport, setIncomeReport] = useState<IncomeStatement | null>(null);
+  const [archiveCases, setArchiveCases] = useState<ArchiveCase[]>([]);
+  const [closeChecklist, setCloseChecklist] = useState<CloseChecklist | null>(null);
   const [users, setUsers] = useState<Array<User & { active: boolean }>>([]);
   const [notice, setNotice] = useState("先登录。演示账号见页面底部。");
 
@@ -669,6 +693,40 @@ export default function Page() {
     setNotice(`${yearMonth} 利润总额 ${yuan(payload.report.profitCents)}`);
   }
 
+  async function loadArchive(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    const period = String(form.get("period") || "");
+    const keyword = String(form.get("keyword") || "");
+    const query = new URLSearchParams();
+    if (period) query.set("period", period);
+    if (keyword) query.set("keyword", keyword);
+    const payload = await call<{ cases: ArchiveCase[] }>(
+      `/api/books/${bookId}/archive?${query.toString()}`,
+    );
+    setArchiveCases(payload.cases);
+    setNotice(`档案主卷 ${payload.cases.length} 条`);
+  }
+
+  async function loadCloseChecklist(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!bookId) return;
+    const form = new FormData(event.currentTarget);
+    const yearMonth = String(form.get("yearMonth") || "");
+    const payload = await call<{ checklist: CloseChecklist }>(
+      `/api/books/${bookId}/periods/${encodeURIComponent(yearMonth)}/close-checklist`,
+    );
+    setCloseChecklist(payload.checklist);
+    setNotice(
+      payload.checklist.closed
+        ? `${yearMonth} 已结账`
+        : payload.checklist.ready
+          ? `${yearMonth} 可结账`
+          : `${yearMonth} 有 ${payload.checklist.gaps.length} 类缺口`,
+    );
+  }
+
   async function refreshUsers() {
     const payload = await call<{ users: Array<User & { active: boolean }> }>("/api/auth/users");
     setUsers(payload.users);
@@ -778,6 +836,27 @@ export default function Page() {
               </ul>
               <Button className="mt-3" disabled={!bookId} onClick={refreshBalance}>刷新试算</Button>
               <Button className="mt-3 ml-2" disabled={!bookId} onClick={() => refreshClaims()}>刷新待办</Button>
+              <form className="mt-4" onSubmit={loadCloseChecklist}>
+                <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-02" required disabled={!bookId} />
+                <Button className="mt-2" disabled={!bookId}>结账前检查清单</Button>
+              </form>
+              {closeChecklist ? (
+                <div className="mt-2 rounded border border-stone-200 p-2 text-sm">
+                  <p className={closeChecklist.ready ? "text-emerald-700" : closeChecklist.closed ? "text-stone-600" : "text-amber-700"}>
+                    {closeChecklist.yearMonth} ·{" "}
+                    {closeChecklist.closed ? "已结账" : closeChecklist.ready ? "可结账" : "有缺口"}
+                  </p>
+                  <ul className="mt-1 space-y-1">
+                    {closeChecklist.gaps.length === 0 ? <li className="text-stone-500">无缺口</li> : null}
+                    {closeChecklist.gaps.map((gap) => (
+                      <li key={gap.code}>
+                        <span className="font-medium">{gap.code}</span>（{gap.count}）· {gap.next}
+                        <div className="text-xs text-stone-500">{gap.samples.slice(0, 5).join("；")}</div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <form className="mt-4" onSubmit={closeMonth}>
                 <Input name="yearMonth" placeholder="YYYY-MM" defaultValue="2026-09" required disabled={!bookId} />
                 <Input className="mt-2" name="remark" placeholder="结账说明" defaultValue="月结" disabled={!bookId} />
@@ -1324,6 +1403,39 @@ export default function Page() {
               ) : (
                 <p className="mt-3 text-sm text-stone-500">选期间后刷新；口径与结账相同。</p>
               )}
+            </Card>
+          </section>
+
+          <section className="mt-6">
+            <Card>
+              <CardTitle>电子档案主卷</CardTitle>
+              <form className="mt-3 flex flex-wrap gap-2" onSubmit={loadArchive}>
+                <Input className="w-40" name="period" placeholder="期间 YYYY-MM" defaultValue="2026-02" disabled={!bookId} />
+                <Input className="w-56" name="keyword" placeholder="关键词（凭证/摘要/来源）" disabled={!bookId} />
+                <Button disabled={!bookId}>查询主卷</Button>
+              </form>
+              <ul className="mt-3 max-h-64 space-y-2 overflow-auto text-sm">
+                {archiveCases.length === 0 ? <li className="text-stone-500">按期间查询已过账凭证主卷。</li> : null}
+                {archiveCases.map((row) => (
+                  <li key={row.entryId} className="rounded border border-stone-200 p-2">
+                    <div className="font-medium">
+                      {row.displayNumber} · {row.occurredOn} · {yuan(row.debitCents)}
+                    </div>
+                    <div className="text-stone-600">{row.memo}</div>
+                    <div className="text-xs text-stone-500">
+                      引用 {row.references.length} · 附件 {row.attachments.length} · hash {row.contentHash.slice(0, 12)}…
+                    </div>
+                    {row.references.length ? (
+                      <div className="mt-1 text-xs text-stone-600">
+                        {row.references
+                          .slice(0, 6)
+                          .map((ref) => `${ref.type}:${ref.label}`)
+                          .join("；")}
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
             </Card>
           </section>
 

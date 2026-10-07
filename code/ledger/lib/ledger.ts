@@ -124,14 +124,46 @@ export async function monthPlMovements(bookId: string, yearMonth: string, client
     .filter((row) => row.netCents !== 0);
 }
 
-export async function closePeriod(bookId: string, yearMonth: string, lockedBy: string, remark = "") {
-  if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
+export type CloseGap = {
+  code: string;
+  count: number;
+  samples: string[];
+  next: string;
+};
+
+export type CloseChecklist = {
+  yearMonth: string;
+  closed: boolean;
+  ready: boolean;
+  gaps: CloseGap[];
+};
+
+/** 结账门槛只读投影；与 closePeriod 共用同一套查询，避免规则漂移。 */
+export async function periodCloseChecklist(bookId: string, yearMonth: string): Promise<CloseChecklist> {
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(yearMonth)) {
     throw new LedgerError("期间格式应为 YYYY-MM。", "PERIOD_INVALID", "例如 2026-09。");
   }
+
   const existing = await db.accountingPeriod.findUnique({
     where: { bookId_yearMonth: { bookId, yearMonth } },
   });
-  if (existing) return existing;
+  if (existing) {
+    return {
+      yearMonth,
+      closed: true,
+      ready: false,
+      gaps: [
+        {
+          code: "ALREADY_CLOSED",
+          count: 1,
+          samples: [`lockedBy=${existing.lockedBy}`],
+          next: "若需改账，先反结账。",
+        },
+      ],
+    };
+  }
+
+  const gaps: CloseGap[] = [];
 
   const openClaims = await db.claim.findMany({
     where: {
@@ -143,12 +175,12 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     take: 20,
   });
   if (openClaims.length) {
-    const detail = openClaims.map((row) => `${row.id.slice(0, 8)}:${row.status}`).join("、");
-    throw new LedgerError(
-      `期间 ${yearMonth} 仍有未完成单据：${detail}。`,
-      "PERIOD_HAS_OPEN_CLAIMS",
-      "先审批完或付完这些单，再结账。",
-    );
+    gaps.push({
+      code: "OPEN_CLAIMS",
+      count: openClaims.length,
+      samples: openClaims.map((row) => `${row.id.slice(0, 8)}:${row.status}:${row.purpose}`),
+      next: "先审批完或付完这些单，再结账。",
+    });
   }
 
   const unmatchedStatements = await db.bankStatement.findMany({
@@ -162,14 +194,12 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     take: 20,
   });
   if (unmatchedStatements.length) {
-    const detail = unmatchedStatements
-      .map((row) => `${row.reference}:${row.remainingCents}分`)
-      .join("、");
-    throw new LedgerError(
-      `期间 ${yearMonth} 仍有未匹配银行流水：${detail}。`,
-      "PERIOD_HAS_UNMATCHED_STATEMENTS",
-      "先匹配或撤销多余流水，再结账。",
-    );
+    gaps.push({
+      code: "UNMATCHED_STATEMENTS",
+      count: unmatchedStatements.length,
+      samples: unmatchedStatements.map((row) => `${row.reference}:${row.remainingCents}分`),
+      next: "先匹配或撤销多余流水，再结账。",
+    });
   }
 
   const openPayroll = await db.payrollBatch.findMany({
@@ -182,25 +212,72 @@ export async function closePeriod(bookId: string, yearMonth: string, lockedBy: s
     take: 20,
   });
   if (openPayroll.length) {
-    const detail = openPayroll.map((row) => `${row.id.slice(0, 8)}:${row.status}`).join("、");
-    throw new LedgerError(
-      `期间 ${yearMonth} 仍有未完工资批次：${detail}。`,
-      "PERIOD_HAS_OPEN_PAYROLL",
-      "先确认个税、过账并付清实发，再结账。",
-    );
+    gaps.push({
+      code: "OPEN_PAYROLL",
+      count: openPayroll.length,
+      samples: openPayroll.map((row) => `${row.id.slice(0, 8)}:${row.status}`),
+      next: "先确认个税、过账并付清实发，再结账。",
+    });
   }
 
   const { listAssetsDueForDepreciation } = await import("./fixed-asset");
   const dueAssets = await listAssetsDueForDepreciation(bookId, yearMonth);
   if (dueAssets.length) {
-    const detail = dueAssets
-      .slice(0, 20)
-      .map((row) => `${row.code}:${row.name}`)
-      .join("、");
+    gaps.push({
+      code: "OPEN_DEPRECIATION",
+      count: dueAssets.length,
+      samples: dueAssets.slice(0, 20).map((row) => `${row.code}:${row.name}`),
+      next: "先计提固定资产折旧，再结账。",
+    });
+  }
+
+  return {
+    yearMonth,
+    closed: false,
+    ready: gaps.length === 0,
+    gaps,
+  };
+}
+
+export async function closePeriod(bookId: string, yearMonth: string, lockedBy: string, remark = "") {
+  const checklist = await periodCloseChecklist(bookId, yearMonth);
+  if (checklist.closed) {
+    const existing = await db.accountingPeriod.findUniqueOrThrow({
+      where: { bookId_yearMonth: { bookId, yearMonth } },
+    });
+    return existing;
+  }
+
+  const claimGap = checklist.gaps.find((row) => row.code === "OPEN_CLAIMS");
+  if (claimGap) {
     throw new LedgerError(
-      `期间 ${yearMonth} 仍有应提未提折旧：${detail}。`,
+      `期间 ${yearMonth} 仍有未完成单据：${claimGap.samples.join("、")}。`,
+      "PERIOD_HAS_OPEN_CLAIMS",
+      claimGap.next,
+    );
+  }
+  const statementGap = checklist.gaps.find((row) => row.code === "UNMATCHED_STATEMENTS");
+  if (statementGap) {
+    throw new LedgerError(
+      `期间 ${yearMonth} 仍有未匹配银行流水：${statementGap.samples.join("、")}。`,
+      "PERIOD_HAS_UNMATCHED_STATEMENTS",
+      statementGap.next,
+    );
+  }
+  const payrollGap = checklist.gaps.find((row) => row.code === "OPEN_PAYROLL");
+  if (payrollGap) {
+    throw new LedgerError(
+      `期间 ${yearMonth} 仍有未完工资批次：${payrollGap.samples.join("、")}。`,
+      "PERIOD_HAS_OPEN_PAYROLL",
+      payrollGap.next,
+    );
+  }
+  const depGap = checklist.gaps.find((row) => row.code === "OPEN_DEPRECIATION");
+  if (depGap) {
+    throw new LedgerError(
+      `期间 ${yearMonth} 仍有应提未提折旧：${depGap.samples.join("、")}。`,
       "PERIOD_HAS_OPEN_DEPRECIATION",
-      "先计提固定资产折旧，再结账。",
+      depGap.next,
     );
   }
 
